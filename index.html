@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MRF Travels | Bespoke Luxury Travel &amp; Custom Itineraries</title>
+<meta name="description" content="MRF Travels designs bespoke luxury itineraries and handles every booking, from the first call until you're home again.">
+<meta property="og:title" content="MRF Travels">
+<meta property="og:description" content="Bespoke luxury travel and custom itineraries.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231B3A31'/%3E%3Ctext x='32' y='42' font-family='Georgia,serif' font-size='24' fill='%23E4CFA3' text-anchor='middle'%3EMRF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Jost:wght@300;400;500&display=swap">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<style id="css">
+/* Layout: full-bleed photo hero, quiet service columns, itinerary card with tabs, photo-led journal that opens into an article with a gallery. Edit mode adds inline editing, a side panel, and a publish bar. */
+:root{
+  --bg:#EFF0EC; --surface:#F8F8F5; --ink:#14251F; --muted:#5D6B64; --line:#D2D6CE;
+  --green:#1B3A31; --gold:#9C7A45; --on-dark:#F3EEE3; --ph1:#2A4A40; --ph2:#5E7A68;
+  --display:"Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --body:"Jost", "Futura", "Century Gothic", "Helvetica Neue", Arial, sans-serif;
+  --wrap:1180px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1A16; --surface:#13241F; --ink:#ECE7DC; --muted:#A3AEA6; --line:#26392F;
+  --green:#0A1512; --gold:#D3B47E; --on-dark:#F3EEE3; --ph1:#1A3029; --ph2:#3B5548; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1A16; --surface:#13241F; --ink:#ECE7DC; --muted:#A3AEA6; --line:#26392F;
+  --green:#0A1512; --gold:#D3B47E; --on-dark:#F3EEE3; --ph1:#1A3029; --ph2:#3B5548; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:300;font-size:17px;line-height:1.7}
+a{color:inherit}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.1;text-wrap:balance;margin:0}
+.label{font-size:12px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.rule{width:48px;height:1px;background:var(--gold);border:0;margin:20px 0}
+.multi p{margin:0 0 1em}
+
+/* header */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--bg)}
+header{position:sticky;top:env(safe-area-inset-top, 0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:16px}
+.logo{text-decoration:none;display:flex;align-items:baseline;gap:10px}
+.logo b{font-family:var(--display);font-weight:500;font-size:26px;letter-spacing:.08em}
+.logo span{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted)}
+nav{display:flex;gap:26px;align-items:center;font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:400}
+nav a{text-decoration:none}
+nav a:hover{color:var(--gold)}
+nav .cta{border:1px solid var(--ink);padding:8px 16px}
+nav .cta:hover{background:var(--ink);color:var(--bg)}
+@media (max-width:820px){nav a:not(.cta){display:none}}
+
+/* photo slots */
+.slot{position:relative;margin:0;overflow:hidden;background:linear-gradient(150deg,var(--ph1),var(--ph2));max-width:100%}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.slot .empty{position:absolute;inset:0;display:grid;place-items:center;color:rgba(243,238,227,.55);font-size:11px;letter-spacing:.24em;text-transform:uppercase;text-align:center;padding:12px}
+.slot .tools{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;z-index:3}
+.slot .tools button{font:500 11px var(--body);letter-spacing:.14em;text-transform:uppercase;background:rgba(10,21,18,.85);color:#F3EEE3;border:1px solid rgba(243,238,227,.45);padding:8px 12px;cursor:pointer}
+.slot .tools button:hover{background:#0A1512}
+.slot.busy::after{content:"Uploading…";position:absolute;inset:0;z-index:4;display:grid;place-items:center;background:rgba(10,21,18,.6);color:#F3EEE3;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+.editing .slot{outline:1px dashed var(--gold);outline-offset:-6px}
+
+/* hero */
+.hero{position:relative;color:var(--on-dark)}
+.hero .slot{position:absolute;inset:0}
+.hero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(8,16,13,.15) 0%,rgba(8,16,13,.72) 100%);pointer-events:none}
+.hero .wrap{position:relative;z-index:2;padding-block:180px 72px;pointer-events:none}
+.hero .wrap a,.hero .wrap [data-k]{pointer-events:auto}
+.hero h1{font-size:clamp(44px,7vw,92px);max-width:13ch;letter-spacing:-.01em}
+.hero h1 i{color:#E4CFA3}
+.hero p{max-width:44ch;font-size:19px;margin:22px 0 32px;color:rgba(243,238,227,.86)}
+.hero .label{color:#E4CFA3}
+.editing .hero .wrap{padding-bottom:90px}
+.btn{display:inline-block;font:500 13px var(--body);letter-spacing:.2em;text-transform:uppercase;text-decoration:none;padding:15px 26px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer}
+.btn.solid{background:var(--gold);border-color:var(--gold);color:#14110B}
+.btn:hover{opacity:.88}
+@media (max-width:600px){.hero .wrap{padding-block:120px 48px}}
+
+/* sections */
+section{padding-block:96px}
+.intro{display:grid;grid-template-columns:1fr 1.4fr;gap:64px;margin-bottom:56px}
+.intro h2{font-size:clamp(34px,4.5vw,54px)}
+.intro p{margin:0;color:var(--muted);max-width:56ch;align-self:end}
+@media (max-width:820px){.intro{grid-template-columns:1fr;gap:20px}}
+
+.services{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.services > div{padding:32px 32px 8px 0;min-width:0}
+.services > div + div{padding-left:32px;border-left:1px solid var(--line)}
+.services h3{font-size:26px;margin:14px 0 10px}
+.services p{margin:0;color:var(--muted)}
+@media (max-width:820px){.services{grid-template-columns:1fr}.services > div,.services > div + div{padding:28px 0;border-left:0;border-bottom:1px solid var(--line)}}
+
+/* process + itinerary */
+.process-band{background:var(--green);color:var(--on-dark)}
+.process-band .wrap{display:grid;grid-template-columns:1fr 1fr;gap:72px}
+@media (max-width:900px){.process-band .wrap{grid-template-columns:1fr;gap:48px}}
+.process-band h2{font-size:clamp(32px,4vw,48px);margin:14px 0 32px}
+.process-band .label{color:#E4CFA3}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:26px}
+.steps li{display:grid;grid-template-columns:44px 1fr;gap:16px}
+.steps .n{font-family:var(--display);font-style:italic;font-size:28px;color:#E4CFA3;line-height:1}
+.steps b{font-weight:500;display:block;letter-spacing:.02em}
+.steps span{color:rgba(243,238,227,.72);font-size:16px;display:block}
+.itin-col{min-width:0;display:grid;gap:14px;align-content:start}
+.itin-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.itin-tabs button{font:500 11px var(--body);letter-spacing:.18em;text-transform:uppercase;background:transparent;color:var(--on-dark);border:1px solid rgba(243,238,227,.35);padding:8px 14px;cursor:pointer}
+.itin-tabs button[aria-pressed="true"]{background:#E4CFA3;color:#14110B;border-color:#E4CFA3}
+.itin{background:#F6F2EA;color:#1A1A15;padding:36px 32px;min-width:0;box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
+.itin .top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #D6CDBB;padding-bottom:16px;margin-bottom:8px}
+.itin h3{font-size:28px}
+.itin .for{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#8A6C3B;align-self:end}
+.itin dl{margin:0;display:grid}
+.itin .day{display:grid;grid-template-columns:76px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid #E4DCCB}
+.itin dt{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#8A6C3B;padding-top:4px}
+.itin dd{margin:0;font-size:15.5px;line-height:1.55;white-space:pre-line}
+.itin dd b{font-weight:500;display:block;font-size:16.5px;white-space:normal}
+.itin .foot{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6E6656;padding-top:14px}
+
+/* journal */
+.feature-post{display:grid;grid-template-columns:1.35fr 1fr;gap:48px;align-items:center;text-decoration:none;margin-bottom:64px}
+.feature-post .slot{aspect-ratio:4/3}
+.feature-post h3{font-size:clamp(30px,3.6vw,44px);margin:14px 0 14px}
+.feature-post p{color:var(--muted);margin:0 0 20px}
+.more{font-size:12px;letter-spacing:.22em;text-transform:uppercase;border-bottom:1px solid var(--gold);padding-bottom:3px}
+@media (max-width:820px){.feature-post{grid-template-columns:1fr;gap:24px}}
+.post-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:40px}
+@media (max-width:640px){.post-grid{grid-template-columns:1fr}}
+.post-card{text-decoration:none;display:flex;flex-direction:column;gap:14px;min-width:0}
+.post-card .slot{aspect-ratio:3/2}
+.post-card h3{font-size:28px}
+.post-card p{margin:0;color:var(--muted);font-size:16px}
+.meta{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.feature-post:hover h3,.post-card:hover h3{color:var(--gold)}
+.empty-note{color:var(--muted);border:1px dashed var(--line);padding:32px;text-align:center}
+
+/* about */
+.about .wrap{display:grid;grid-template-columns:0.9fr 1.1fr;gap:72px;align-items:center}
+.about .slot{aspect-ratio:4/5}
+.about h2{font-size:clamp(34px,4.5vw,54px);margin:14px 0 8px}
+.about .multi{color:var(--muted);max-width:52ch}
+.sig{font-family:var(--display);font-style:italic;font-size:30px;color:var(--ink)}
+@media (max-width:820px){.about .wrap{grid-template-columns:1fr;gap:36px}.about .slot{max-width:440px}}
+
+/* inquiry */
+.inquire{background:var(--surface);border-top:1px solid var(--line)}
+.inquire .wrap{display:grid;grid-template-columns:1fr 1.3fr;gap:72px}
+@media (max-width:900px){.inquire .wrap{grid-template-columns:1fr;gap:36px}}
+.inquire h2{font-size:clamp(34px,4.5vw,54px);margin:14px 0 18px}
+.inquire p{color:var(--muted)}
+.contact-lines{display:grid;gap:4px;margin-top:24px;font-size:15px;letter-spacing:.04em}
+form{display:grid;grid-template-columns:1fr 1fr;gap:22px 24px;min-width:0}
+form .full{grid-column:1/-1}
+@media (max-width:560px){form{grid-template-columns:1fr}}
+label{display:grid;gap:6px;font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:300 17px var(--body);color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 0;width:100%;border-radius:0;box-sizing:border-box}
+input:focus,select:focus,textarea:focus{outline:none;border-bottom-color:var(--gold)}
+select option{background:var(--surface)}
+textarea{min-height:96px;resize:vertical;line-height:1.55}
+.form-note{font-size:14px;color:var(--gold);margin:0}
+
+/* article */
+.article{padding-block:56px 96px}
+.back{font-size:12px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;color:var(--gold)}
+.article .head{max-width:820px;margin:36px auto 40px;text-align:center}
+.article h1{font-size:clamp(38px,5.5vw,66px);margin:16px 0 18px}
+.article .cover{aspect-ratio:16/8;max-width:var(--wrap);margin:0 auto 56px}
+.article .body{max-width:64ch;margin:0 auto;font-size:19px}
+.article .body p{margin:0 0 1.3em;white-space:pre-line}
+.article .body.first > p:first-child::first-letter{font-family:var(--display);float:left;font-size:4.2em;line-height:.85;padding:6px 10px 0 0;color:var(--gold)}
+.article .body h2{font-size:30px;margin:1.6em 0 .6em}
+.article .body h3{font-size:23px;margin:1.4em 0 .5em}
+.article .body strong{font-weight:500}
+.ed-row select{font:500 11px var(--body);letter-spacing:.12em;text-transform:uppercase;width:auto;border:1px solid var(--gold);padding:8px 10px;color:inherit;background:var(--bg)}
+.gallery{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;gap:12px;margin:48px auto;max-width:960px;aspect-ratio:16/10}
+.gallery .slot:first-child{grid-row:1/3}
+@media (max-width:600px){.gallery{grid-template-columns:1fr;grid-template-rows:none;aspect-ratio:auto}.gallery .slot{aspect-ratio:4/3}.gallery .slot:first-child{grid-row:auto}}
+.caption{text-align:center;font-size:13px;color:var(--muted);letter-spacing:.06em;margin-top:-32px;margin-bottom:48px}
+
+footer{background:var(--green);color:rgba(243,238,227,.7)}
+footer .wrap{padding-block:40px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-size:13px;letter-spacing:.08em}
+footer b{font-family:var(--display);font-weight:500;font-size:22px;letter-spacing:.08em;color:#F3EEE3}
+
+/* ---------- edit mode ---------- */
+.ed-only{display:none !important}
+.editing .ed-only{display:flex !important}
+.editing [data-k]{outline:1px dashed var(--gold);outline-offset:4px;cursor:text;min-width:2ch}
+.editing [data-k]:focus{outline-style:solid}
+.editing .multi[data-k]{white-space:pre-wrap}
+.ed-row{gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.ed-btn{font:500 11px var(--body);letter-spacing:.16em;text-transform:uppercase;background:transparent;color:inherit;border:1px solid var(--gold);padding:9px 14px;cursor:pointer}
+.ed-btn:hover{background:var(--gold);color:#14110B}
+.ed-btn.solid{background:var(--gold);color:#14110B}
+.ed-btn.danger{border-color:#B4483B;color:#B4483B}
+.ed-btn.danger:hover{background:#B4483B;color:#fff}
+.ed-hint{font-size:13px;color:var(--muted)}
+.edit-launch{position:fixed;right:calc(16px + env(safe-area-inset-right, 0px));bottom:calc(16px + env(safe-area-inset-bottom, 0px));z-index:20;font:500 12px var(--body);letter-spacing:.16em;text-transform:uppercase;background:var(--gold);color:#14110B;border:0;padding:13px 20px;cursor:pointer;box-shadow:0 8px 24px -10px rgba(0,0,0,.5)}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--ink);color:var(--bg);padding-block:12px calc(12px + env(safe-area-inset-bottom, 0px));padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.bar .in{max-width:var(--wrap);margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bar .status{flex:1;min-width:180px;font-size:14px}
+.bar .status small{display:block;opacity:.7;font-size:12px}
+.bar .ed-btn{color:var(--bg);border-color:var(--bg)}
+.bar .ed-btn.solid{background:var(--gold);border-color:var(--gold);color:#14110B}
+.bar .ed-btn:disabled{opacity:.4;cursor:default}
+body.editing{padding-bottom:84px}
+.panel{position:fixed;top:0;right:0;bottom:0;z-index:30;width:min(460px,100%);box-sizing:border-box;background:var(--surface);color:var(--ink);border-left:1px solid var(--line);box-shadow:-20px 0 50px -30px rgba(0,0,0,.5);overflow-y:auto;padding-block:calc(24px + env(safe-area-inset-top, 0px)) calc(110px + env(safe-area-inset-bottom, 0px));padding-left:24px;padding-right:max(24px, env(safe-area-inset-right, 0px));display:grid;gap:18px;align-content:start}
+.panel h2{font-size:28px}
+.panel .ph{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.panel .help{font-size:14px;color:var(--muted);margin:0;line-height:1.5}
+.panel .day-ed{border:1px solid var(--line);padding:14px;display:grid;gap:10px}
+.panel .day-ed .acts{display:flex;gap:6px;flex-wrap:wrap}
+.panel textarea.big{min-height:320px}
+@media (prefers-reduced-motion:no-preference){.panel{animation:slide .2s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:0}}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="ui"></div>
+<script type="application/json" id="content">
+{
+ "site": {
+  "heroLabel": "Bespoke luxury travel",
+  "heroTitle": "Journeys composed *entirely* around you.",
+  "heroText": "Private itineraries, hand-picked hotels and every reservation handled, from the first call until you're home again.",
+  "heroButton": "Begin your journey",
+  "servicesLabel": "What I do",
+  "servicesTitle": "Travel without the planning.",
+  "servicesIntro": "Every trip I design starts with a conversation about how you like to travel: the pace, the hotels, the meals worth crossing a city for. Then I build it, book it, and stay on call while you're away.",
+  "processLabel": "How it works",
+  "processTitle": "From first call to final transfer.",
+  "journalLabel": "The Journal",
+  "journalTitle": "Notes from my travels.",
+  "journalIntro": "The places I've stayed, the tables I'd book again, and the details that make a trip. Everything I recommend, I've experienced first.",
+  "aboutLabel": "About",
+  "aboutTitle": "Hello, I'm the M.R.F. in MRF Travels.",
+  "aboutText": "I started planning trips for friends and family long before it became my work. Today I design journeys for clients who want every detail considered and none of the stress of arranging it.\n\nMy approach is simple: I only recommend what I know firsthand, and I treat every trip as if I were taking it myself.",
+  "signature": "MRF",
+  "inquireLabel": "Inquire",
+  "inquireTitle": "Let's plan your next journey.",
+  "inquireText": "Tell me a little about the trip you have in mind. I'll reply within two business days to schedule your consultation.",
+  "email": "hello@mrftravels.com",
+  "hours": "By appointment · Monday to Saturday",
+  "footer": "Bespoke itineraries & luxury travel booking · © 2026"
+ },
+ "services": [
+  {
+   "label": "Design",
+   "title": "Custom itineraries",
+   "text": "A day-by-day plan written for you alone, with private guides, reservations and time left open on purpose."
+  },
+  {
+   "label": "Booking",
+   "title": "Full-service reservations",
+   "text": "Flights, villas and suites, private transfers, yachts and tables. One point of contact for all of it."
+  },
+  {
+   "label": "Concierge",
+   "title": "While you travel",
+   "text": "A direct line to me throughout your trip for changes, upgrades and the moments that call for something special."
+  }
+ ],
+ "steps": [
+  {
+   "title": "Consultation",
+   "text": "A 30-minute call about where, when, who, and how you like to travel."
+  },
+  {
+   "title": "Proposal",
+   "text": "Within a week, a draft itinerary with hotel options and a clear budget."
+  },
+  {
+   "title": "Booking",
+   "text": "Once you approve, I secure every reservation and send a final travel book."
+  },
+  {
+   "title": "Travel",
+   "text": "You go. I'm a message away for anything that comes up."
+  }
+ ],
+ "photos": {
+  "hero": "",
+  "about": "images/about-portrait.jpg"
+ },
+ "itineraries": [
+  {
+   "id": "amalfi",
+   "title": "Amalfi Coast",
+   "meta": "Sample · 7 nights · for two",
+   "foot": "Days 5–7 continue in your full travel book",
+   "days": [
+    {
+     "label": "Day 1",
+     "title": "Arrive Naples",
+     "text": "Private driver along the coast road to Ravello. Check in to a sea-view suite; sunset aperitivo on the terrace."
+    },
+    {
+     "label": "Day 2",
+     "title": "Ravello gardens",
+     "text": "Early entry to Villa Cimbrone before the crowds. Lunch reserved at a family trattoria in Scala."
+    },
+    {
+     "label": "Day 3",
+     "title": "Private boat",
+     "text": "10:00 departure from Amalfi harbor. Swim stops at the Li Galli islands, lunch in Positano."
+    },
+    {
+     "label": "Day 4",
+     "title": "Capri",
+     "text": "Morning hydrofoil, private guide, and a quiet afternoon at a beach club in Marina Piccola."
+    }
+   ]
+  },
+  {
+   "id": "kyoto",
+   "title": "Kyoto & Hakone",
+   "meta": "Sample · 9 nights · for two",
+   "foot": "Days 4–9 continue in your full travel book",
+   "days": [
+    {
+     "label": "Day 1",
+     "title": "Arrive Kyoto",
+     "text": "Met at the airport and driven to a garden-view suite. Evening walk through Gion with a private guide."
+    },
+    {
+     "label": "Day 2",
+     "title": "Temples before the crowds",
+     "text": "Fushimi Inari at 7:00, then a private tea ceremony in a 400-year-old teahouse."
+    },
+    {
+     "label": "Day 3",
+     "title": "Arashiyama",
+     "text": "Bamboo grove at dawn, river boat lunch, and a kaiseki dinner reserved months ahead."
+    }
+   ]
+  }
+ ],
+ "posts": [
+  {
+   "id": "amalfi",
+   "place": "Amalfi Coast, Italy",
+   "title": "Ten slow days on the Amalfi Coast",
+   "date": "May 2024",
+   "read": "10 min read",
+   "excerpt": "A sun-soaked journey through Positano, Ravello, Amalfi, and Capri—filled with cliffside views, endless stairs, giant lemons, unforgettable food, and a Bellini worth remembering.",
+   "body": "There are some places that are beautiful in photographs and then slightly disappointing once you finally see them in person.\n\nThe Amalfi Coast is not one of those places.\n\nMy husband and I spent ten days there at the end of May and beginning of June 2024, and I can still remember the first time the coastline appeared outside the window of our car. We had arranged a private driver from Naples, and as the city disappeared behind us, the road slowly began twisting its way into the cliffs.\n\nGetting there was beautiful.\n\nIt was also mildly terrifying.\n\nThe roads along the Amalfi Coast seem to have been designed under the assumption that everyone would be driving something approximately the size of a Vespa. We, however, were traveling in a fairly large private van.\n\nThere were stretches of the drive where the road seemed carved directly into the side of the mountain, with rock on one side and what felt like an enormous drop into the Mediterranean on the other. Then suddenly, around one of those turns, I saw it.\n\nMountains covered in houses tumbling almost vertically toward the water. Bright buildings stacked one on top of another. And underneath them, this unbelievable blue sea.\n\nIt was one of the most beautiful contrasts I had ever seen.\n\nThat first view alone made the slightly nerve-racking drive completely worth it.\n\n## Positano\n\nPositano was our home base, and if there is one thing I learned almost immediately, it is that all those incredible views come at a price.\n\nStairs.\n\nSo. Many. Stairs.\n\nPositano is essentially built vertically into the mountainside, which makes it spectacular to look at and considerably less spectacular when you are carrying luggage.\n\nOur hotel had a beautiful sea view, and looking out over Positano every morning was exactly what you imagine an Amalfi Coast vacation should feel like. The trade-off was that going practically anywhere involved climbing up or down.\n\nMy first recommendation to anyone visiting Positano is therefore very simple:\n\n**Pack light.**\n\nYou will thank yourself later.\n\nThe narrow streets were another lesson. Because we had hired a private driver for much of the trip, I assumed transportation would always mean being dropped directly in front of wherever we were going.\n\nNot exactly.\n\nOur van simply could not fit down some of the smaller streets, which meant there were plenty of occasions when our driver had to leave us as close as possible and we walked the rest of the way.\n\nIf you are arranging private transportation around the coast, smaller cars are definitely your friend.\n\nStill, wandering Positano ended up being one of my favorite parts of the trip.\n\nThe streets are full of little boutiques, restaurants, terraces and shops that somehow make getting lost feel completely acceptable.\n\nAnd then there were the lemons.\n\nI had seen Amalfi Coast lemons in photographs before, but nothing prepared me for how enormous some of them were. A few genuinely looked as though they were approaching the size of my head.\n\nThe coast is famous for its distinctive local lemons, particularly the large, fragrant varieties cultivated on terraces along the mountainsides. Seeing them piled into baskets everywhere somehow made the whole place feel even more Italian.\n\nShopping in Positano was another surprise.\n\nThe clothing was beautiful—exactly the breezy, linen-heavy resort style you imagine people wearing while drinking something expensive beside the Mediterranean.\n\nBut one of my favorite purchases from the entire trip wasn't clothing at all.\n\nWhile walking through town, I stumbled into a small leather shoe shop where an older gentleman made me a pair of custom shoes.\n\nHe was so sweet, and watching him make something specifically for me turned what could have been a normal shopping stop into one of those small travel memories you end up remembering years later.\n\nThe shoes were beautiful.\n\nAnd more importantly, they came with a story.\n\n## My Very Brief Relationship With Aperol\n\nItaly also introduced me to Aperol.\n\nAnd Italy can keep it.\n\nI know the Aperol Spritz is practically part of the Italian summer uniform. Everyone looks fantastic holding one. Orange drink, sunny terrace, Mediterranean in the background—it is almost impossible not to order one.\n\nSo naturally, I did.\n\nIt was my first Aperol Spritz.\n\nIt was also my last.\n\nApparently bitter Italian aperitifs and I were simply not meant to have a future together.\n\nThe Bellini, however?\n\nNow **that** was a different story.\n\n## Ravello and the Bellini That Redeemed Italian Cocktails\n\nOne of the most memorable stops of the trip was Ravello.\n\nUnlike Positano, which seems to tumble down toward the sea, Ravello sits high above it. The town is perched roughly 350 meters above the coastline, giving it completely different views and a quieter, almost suspended feeling.\n\nAnd this was where I found my drink.\n\nAt **Caruso, A Belmond Hotel**, we had Bellinis overlooking the Amalfi Coast.\n\nCaruso itself occupies an 11th-century palace in Ravello, surrounded by gardens and some of the most dramatic panoramas along the coast.\n\nThe setting was ridiculous in the best possible way.\n\nThere are certain places where you almost have to stop speaking for a minute because the view is doing enough on its own.\n\nThis was one of them.\n\nAfter my unfortunate introduction to Aperol, the Bellini felt like Italy apologizing to me personally.\n\nPeachy, cold, slightly sweet and infinitely more my speed.\n\nI finally understood the appeal.\n\n## Then There Was the Food\n\nI knew I was going to eat well in Italy.\n\nThat was not exactly a shocking discovery.\n\nWhat I did not expect was for a plate of lasagna to permanently ruin American lasagna for me.\n\nAt some point during our time on the coast, I had what remains one of the best lasagnas I have ever eaten.\n\nIt was simple in the way Italian food somehow manages to be simple while simultaneously making you question everything you've been eating your entire life.\n\nPerfect pasta.\n\nPerfect sauce.\n\nPerfect texture.\n\nNothing unnecessary.\n\nAfter that trip, pasta back home had a nearly impossible standard to meet.\n\nMost of it has failed.\n\nWe spent a significant portion of our ten days doing exactly what I think you're supposed to do in this part of Italy: walking around, admiring things and eating considerably more than necessary.\n\nAnd because everything is built on a mountain, I have decided the stairs canceled out at least some of the pasta.\n\nThat is the official calculation and I will not be accepting corrections.\n\n## Amalfi\n\nFrom Positano, we continued along the coast toward Amalfi.\n\nBy this point I had become slightly more accustomed to the roads, although I don't know that you ever completely stop noticing how close the edge appears to be.\n\nThe drive itself became part of the experience.\n\nEvery bend revealed another village, another beach tucked beneath the cliffs or another impossible-looking hotel built into the mountains.\n\nThe Amalfi Coast feels less like one destination and more like a series of little worlds connected by one spectacularly dramatic road.\n\nAmalfi itself has a much deeper history than I realized before visiting. For centuries it was an important Mediterranean maritime center, and remnants of that history still sit behind the restaurants, shops and crowds you see today.\n\nBut if I'm being completely truthful, I wasn't spending my vacation contemplating medieval trade networks.\n\nI was eating.\n\nAnd walking.\n\nAnd probably looking for another dessert.\n\nWhich is part of what I loved about the trip.\n\nYou can know the history is there without feeling obligated to turn every day into a museum tour.\n\nSometimes the best way to experience a place is simply to wander through it.\n\n## And Then, Capri\n\nEventually we made our way to Capri.\n\nBy then I thought I had adjusted to how beautiful southern Italy could be.\n\nCapri proved otherwise.\n\nThere is something about approaching an island from the water that makes it feel more dramatic.\n\nThe cliffs rise almost directly out of the sea, the water shifts between shades of blue that don't quite look real, and everything seems designed to convince you that staying permanently would be a perfectly reasonable financial decision.\n\nThe entire coastline has that effect, actually.\n\nItaly starts making you reconsider your life plans very quickly.\n\n## Was Late May a Good Time to Go?\n\nAbsolutely.\n\nWe visited during the last week of May and the first week of June, and I would choose that timing again.\n\nThe weather was beautiful without being unbearably hot.\n\nIt was warm enough to enjoy the coast properly, but we weren't dealing with the intense summer heat that arrives later in June, July and August.\n\nAnd while Positano is never exactly deserted, the crowds were manageable.\n\nThat mattered.\n\nOne of the reasons the Amalfi Coast is magical is because you can actually stop and look around.\n\nBeing there slightly before peak summer gave us room to enjoy it.\n\n## What Instagram Doesn't Tell You About the Amalfi Coast\n\nInstagram tells you about the water.\n\nIt tells you about the beach clubs.\n\nIt tells you about the dresses, Bellinis, boats and terraces.\n\nInstagram does not adequately explain the stairs.\n\nOr the roads.\n\nOr the logistics of getting around somewhere built almost vertically into the mountains.\n\nThe Amalfi Coast is beautiful, but it isn't necessarily effortless.\n\nIf you're staying in Positano, expect to walk.\n\nIf your hotel has an incredible view, there is a decent chance you climbed something to earn it.\n\nIf you're bringing large suitcases, reconsider your choices.\n\nIf you're hiring a private driver, ask about the size of the vehicle.\n\nAnd if you're frightened of cliffside roads, perhaps avoid looking down occasionally.\n\nBut strangely, none of those things made me like it less.\n\nThey became part of the story.\n\nBecause when I think about the Amalfi Coast now, I don't just remember perfect photographs.\n\nI remember holding onto my seat on the drive from Naples.\n\nI remember giant lemons.\n\nI remember climbing stairs.\n\nI remember an old man making my shoes.\n\nI remember learning that I do not like Aperol.\n\nI remember discovering that I absolutely do like Bellinis.\n\nI remember a lasagna so good that it permanently raised my standards.\n\nAnd more than anything, I remember looking out at those mountains meeting that unbelievably blue water and wondering how somewhere could possibly look like that.\n\nThere are places you visit because you've seen them a thousand times online.\n\nAnd then there are places that somehow still manage to surprise you once you're standing there.\n\nFor me, the Amalfi Coast was one of those places.\n\n### If I Went Back\n\nI would go during almost exactly the same time of year.\n\nI would pack lighter.\n\nI would use a smaller car.\n\nI would happily climb the stairs again.\n\nI would skip the Aperol.\n\nI would order the Bellini.\n\nAnd I would spend an unreasonable amount of time trying to find that lasagna again.",
+   "caption": "Ravello, Positano and the view from the water",
+   "cover": "images/amalfi-cover.jpg",
+   "gallery": [
+    "images/amalfi-1.jpg",
+    "images/amalfi-2.jpg",
+    "images/amalfi-3.jpg"
+   ]
+  },
+  {
+   "id": "hakone",
+   "place": "Ionian Islands, Greece",
+   "title": "Three Greek Islands, Twelve days, and the Bluest Water I Have Ever Seen",
+   "date": "May, June 2026",
+   "read": "10 min read",
+   "excerpt": "A twelve-day island-hopping adventure through Corfu, Kefalonia, and Zakynthos—filled with buggies, freezing turquoise water, hidden coves, endless gyros, and some of the bluest seas I’ve ever seen.",
+   "body": "There are certain places where the photographs almost work against them.\n\nYou see so many perfectly edited pictures of impossibly blue water, white beaches, boats floating over clear seas and little Greek villages that, eventually, you start expecting reality to fall slightly short.\n\nGreece somehow did the opposite.\n\nMy husband and I spent twelve days island-hopping through Corfu, Kefalonia and Zakynthos at the end of May and beginning of June 2026—four nights on each island—and I can confidently say that some of the most beautiful water I have ever seen in my life was there.\n\nAnd I mean **ever**.\n\nThe three islands are all part of Greece's Ionian Islands, but one of the things that surprised me most was how different they felt from one another. Corfu felt developed, lively and historic. Kefalonia felt quieter, wilder and almost impossibly beautiful. Zakynthos was all about the coastline—towering rock formations, hidden coves and places that seemed designed to be reached from the sea.\n\nBy the end, choosing a favorite between Kefalonia and Zakynthos became nearly impossible.\n\nBut our first introduction to Greece was Corfu.\n\n## Getting to Greece\n\nWe flew from Miami with a layover in Milan before continuing directly to Corfu.\n\nBy the time we arrived, it was nighttime.\n\nWhich meant Greece didn't really introduce itself properly until the following morning.\n\nI woke up, looked out from our room and my heart genuinely fluttered.\n\nThat is the best way I can describe it.\n\nThere was this beautiful expanse of blue outside the window, and although I didn't know it yet, that view was only the beginning.\n\nOver the next twelve days, Greece would repeatedly show me a shade of water that I still don't completely know how to describe.\n\nTurquoise doesn't quite cover it.\n\nBlue doesn't either.\n\nSometimes it was almost neon. Sometimes deep cobalt. Sometimes so clear you could see straight through it.\n\nCorfu was simply the first taste.\n\n## Corfu: Our Introduction to the Ionian Islands\n\nFor our four days in Corfu, we decided to explore mainly by motorbike.\n\nAnd I loved it.\n\nThere is something about being on a Greek island on a bike that feels exactly right. You aren't sealed inside a car. You're actually experiencing the island—the smells, the heat, the sea air, the tiny streets.\n\nIt gave us freedom to wander wherever we wanted.\n\nThe only problem?\n\nIt was **hot**.\n\nAnd our motorbike was not exactly built for speed.\n\nWe never stopped enjoying it, but somewhere between slowly making our way around the island and baking in the Greek sun, we started thinking that perhaps we should try something different on the next island.\n\nThat decision ended up being one of the best ones we made.\n\nCorfu itself felt much more developed than I expected, especially once we later compared it with Kefalonia.\n\nCorfu Old Town was one of my favorite areas to wander through. The narrow streets were filled with little shops, cafés and beautiful old buildings. There was something around practically every corner worth stopping for.\n\nThe historic center has a completely different character from the beachier parts of the island. Centuries of Venetian and other European influence shaped the architecture, and the Old Town is now a UNESCO World Heritage Site. Its tiny streets—known locally as *kantounia*—wind between tall buildings, balconies and little squares.\n\nFor me, however, Corfu was mostly about that first feeling.\n\nWaking up in Greece.\n\nSeeing that water.\n\nRealizing we had twelve days ahead of us.\n\nI didn't know yet that the next island was going to raise the standard considerably.\n\n## The Strangest Flight I Have Ever Taken\n\nGetting between the islands gave us one of the more unexpected moments of the trip.\n\nWe boarded a SKY express flight expecting, naturally, that an airplane would behave like an airplane.\n\nInstead, we discovered what I can only describe as an **airplane operating like a bus**.\n\nThe plane would land at another destination, some passengers would get off, new passengers would get on, and others—including us—would simply remain seated because that wasn't our stop.\n\nThen the doors would close and off we went again.\n\nI had never experienced anything like it.\n\nThere was something so strange about watching people collect their things and leave an airplane while you're just sitting there thinking:\n\n*Well, apparently we're staying.*\n\nThen a new group boards and suddenly you're flying to the next island together.\n\nIt became one of those random travel experiences that I probably never would have thought to research beforehand but will always remember.\n\nEventually, our flying bus delivered us to Kefalonia.\n\nAnd Kefalonia was something else entirely.\n\n## Kefalonia: The Island That Almost Won\n\nFor Kefalonia, we traded our motorbike for a buggy.\n\nBest. Decision. Ever.\n\nSuddenly we had the freedom of an open vehicle without crawling around the island on a small motorbike.\n\nKefalonia is rugged enough that the buggy felt completely at home there.\n\nThe island has mountains, quiet villages, winding roads, rocky landscapes, caves and beaches scattered around its coastline. Greece's tourism authority actually highlights those dramatic contrasts—mountains, caves, traditional villages and wildly different beaches—as one of the things that distinguishes Kefalonia from the other Ionian Islands.\n\nWe took full advantage.\n\nAssos.\n\nFiskardo.\n\nArgostoli.\n\nSami.\n\nMelissani Cave.\n\nWe drove around exploring practically everywhere we could.\n\nAnd then there was Myrtos.\n\n## Myrtos Beach\n\nIf someone asked me to close my eyes and picture the color blue, I think I would picture Myrtos Beach.\n\nYou first see it from above.\n\nThe road winds along the mountain and suddenly the beach appears far below, wrapped between enormous cliffs.\n\nWhite shoreline.\n\nTurquoise water.\n\nMountains on both sides.\n\nIt barely looks real.\n\nMyrtos is one of Greece's most photographed beaches, and once you see it from that viewpoint, you understand why. The coastline is made up of bright white pebbles beneath steep cliffs, which makes the blue of the Ionian Sea look even more intense.\n\nNaturally, seeing it from above wasn't enough.\n\nWe drove down.\n\nStanding on the beach was almost as impressive as seeing it from the overlook.\n\nAnd obviously, with water that beautiful, I had to swim.\n\nThat decision lasted approximately two seconds.\n\nThe water was **freezing**.\n\nNot refreshing.\n\nNot slightly chilly.\n\nFreezing.\n\nI ran in expecting this magical swim through the bluest water of my life and immediately discovered that apparently paradise comes refrigerated.\n\nMy entire body reacted.\n\nFor a moment I genuinely couldn't understand how anyone was calmly swimming around me.\n\nThen something very strange happened.\n\nAfter staying in long enough, my body basically went numb.\n\nOnce I couldn't feel how cold I was anymore, swimming became significantly easier.\n\nI'm not sure that is medically the recommended approach to cold water, but it worked.\n\nAnd eventually there I was, swimming at Myrtos Beach in water so blue that I could almost forgive it for trying to freeze me alive.\n\nAlmost.\n\nIt remains one of my favorite memories of the trip.\n\n[photos]\n\n## Also: I Basically Survived on Gyros\n\nSome people travel through Greece and make a point of tasting a different local specialty every night.\n\nI found gyros.\n\nAnd then I apparently decided I needed nothing else.\n\nBreakfast?\n\nCould have been a gyro.\n\nLunch?\n\nGyro.\n\nDinner?\n\nWhy ruin a system that was clearly working?\n\nI ate them constantly.\n\nAnd somehow I never got tired of them.\n\nEverything tasted incredibly fresh—the meat, pita, vegetables, sauces. Even something as simple as a Greek salad tasted different.\n\nThe tomatoes actually tasted like tomatoes.\n\nThe feta.\n\nThe olive oil.\n\nThe cucumbers.\n\nEverything was simple, cold, fresh and exactly what you wanted after spending a hot day driving around an island.\n\nThere are meals you remember because they were expensive and elaborate.\n\nThen there are meals you remember because you're sitting somewhere in Greece, sunburned and hungry after swimming all day, eating a gyro that costs a fraction of what dinner at some fancy restaurant would cost and thinking:\n\n*This may be one of the best things I've ever eaten.*\n\nGreece did that to me repeatedly.\n\n## And Then Came Zakynthos\n\nBy the time we arrived in Zakynthos—also known as Zante—we had become very comfortable with our island routine.\n\nBuggy.\n\nSwimsuit.\n\nBeach.\n\nFood.\n\nExplore.\n\nRepeat.\n\nAnd we rented another buggy.\n\nZakynthos made us particularly happy that we did.\n\nOutside of Zakynthos Town, much of the island felt far less developed than Corfu. It was rocky, open and in places almost left alone.\n\nFor the type of trip we were doing, that was perfect.\n\nWe could jump into the buggy and go practically anywhere without worrying much about the terrain.\n\nBut Zakynthos taught me something else.\n\nThe island itself wasn't necessarily what impressed me most.\n\nThe **edge of the island** did.\n\n## Zakynthos Is Meant to Be Seen From the Water\n\nIf I went back to Zakynthos tomorrow, I would charter another boat.\n\nNo question.\n\nThe coast is extraordinary.\n\nCliffs rise straight out of the sea.\n\nRock formations cut through the water.\n\nThere are caves and little coves hidden around the island that you would never properly experience from land.\n\nWe chartered a private boat, which gave us the ability to explore places that otherwise could only be reached from the water.\n\nThat was when Zakynthos really came alive for me.\n\nOfficial descriptions of the island emphasize exactly that contrast: quieter coves and sandy beaches on one side, rugged cliffs and sea caves on the other.\n\nBut reading that and actually coming around a rock formation on a boat are two very different things.\n\nFrom the water, the scale becomes completely different.\n\nYou realize how massive the cliffs are.\n\nHow tiny your boat is.\n\nHow clear the water is beneath you.\n\nAnd how many places are completely hidden until you approach from the sea.\n\nThis was the Greece I had pictured before the trip.\n\nExcept better.\n\n## Shipwreck Beach\n\nAnd then, of course, there was Navagio.\n\nShipwreck Beach.\n\nYou've almost certainly seen the photograph even if you don't recognize the name: brilliant blue water surrounded by towering white limestone cliffs with the rusted remains of a ship sitting on the beach.\n\nThe ship, *Panagiotis*, ran aground there in 1980, and the cove has since become one of the most recognizable landscapes in Greece. Today, access is restricted because of rockfall and safety concerns, and current guidance prohibits visitors from disembarking directly onto the beach.\n\nEven without simply walking onto it, seeing Navagio is incredible.\n\nGetting to some of the viewpoints and coastal areas felt slightly sketchy at times—which somehow seems to be a recurring theme among places with spectacular views—but when you finally see that bright water trapped between enormous limestone walls, you understand why people go.\n\nIt's gorgeous.\n\nBut Shipwreck Beach was only part of what impressed me about Zakynthos.\n\nThe entire coastline deserves attention.\n\nIf you go there and spend your whole trip inland, you've missed the best part.\n\nGet on a boat.\n\n## Three Islands That Didn't Feel Like the Same Trip\n\nOne of my favorite things about traveling through Corfu, Kefalonia and Zakynthos back-to-back was realizing that being geographically close doesn't mean islands feel identical.\n\nThey didn't.\n\n**Corfu** felt like the introduction.\n\nIt was prettier, more polished and more developed. We wandered through the shops of Old Town, rode around on our motorbike and got our first taste of the ridiculous Ionian water.\n\n**Kefalonia** felt wild.\n\nThis was the island where I wanted to keep driving just to see what was around the next corner.\n\nAssos, Fiskardo, Melissani, Sami, Myrtos—the scenery constantly changed.\n\nAnd Myrtos came extremely close to deciding my favorite island entirely on its own.\n\n**Zakynthos** was different again.\n\nIts interior didn't capture me in quite the same way Kefalonia did.\n\nIts coastline absolutely did.\n\nZakynthos is an island I would return to because I want another boat, another day and another opportunity to explore every cave and stretch of cliff I didn't get to see the first time.\n\nThat is why choosing between Kefalonia and Zakynthos is almost impossible for me.\n\nKefalonia may have been my favorite **island**.\n\nZakynthos may have had my favorite **coastline**.\n\nSo I'm calling it a tie.\n\n## What I Would Do Again\n\nI would travel in late May and early June again.\n\nI would spend four nights per island again.\n\nI would absolutely rent the buggy again.\n\nThe motorbike in Corfu was fun, and I'm glad we did it, but once we switched to the buggy there was no going back.\n\nIt gave us exactly what we wanted: freedom.\n\nNo schedule.\n\nNo waiting on transportation.\n\nNo worrying whether a road was a little rough.\n\nIf we saw something interesting, we went.\n\nIf we wanted to stop, we stopped.\n\nIf we found a beach, we pulled over.\n\nThat freedom became one of the best parts of the trip.\n\nI would charter a private boat in Zakynthos again without hesitation.\n\nI would visit Myrtos again.\n\nI would swim there again, despite knowing better now.\n\nAnd apparently I would eat another forty gyros.\n\n## What Greece Left Me With\n\nWhen I think about this trip, strangely, I don't first think about a hotel or a particular restaurant.\n\nI think about color.\n\nThat first morning in Corfu when I opened my eyes and saw the sea outside our room.\n\nThe impossible blue beneath the cliffs at Myrtos.\n\nThe water surrounding our boat in Zakynthos.\n\nThe white rock formations against the Mediterranean sun.\n\nThe little roads disappearing through landscapes that looked completely different from one island to the next.\n\nI think about my husband and me riding around Corfu on a motorbike, hot but happy.\n\nSwitching to a buggy and deciding that was clearly the superior method of transportation.\n\nAn airplane behaving like public transportation.\n\nMy body going numb in Myrtos because apparently I refused to leave the water gracefully.\n\nEating an irresponsible number of gyros.\n\nAnd riding around without much of a plan beyond seeing what we could find.\n\nSometimes the best trips aren't about one extraordinary hotel or one meticulously planned itinerary.\n\nSometimes they're about having enough freedom to explore.\n\nGreece gave us that.\n\nThree islands.\n\nTwelve days.\n\nA motorbike.\n\nTwo buggies.\n\nOne very strange airplane.\n\nFar too many gyros.\n\nAnd some of the bluest water I have ever seen in my life.\n\nI would do it all again.\n",
+   "caption": "The Ionian Islands ",
+   "cover": "images/greece-cover.jpg",
+   "gallery": [
+    "images/greece-1.jpg",
+    "images/greece-2.jpg",
+    "images/greece-3.jpg"
+   ]
+  },
+  {
+   "id": "mara",
+   "place": "Thailand",
+   "title": "One Week in Thailand I’ll Never Forget",
+   "date": "December 2025",
+   "read": "10 min read",
+   "excerpt": "A fast-paced family adventure through Bangkok, Koh Samui, and Pattaya—filled with floating markets, tropical beaches, baby pigs, incredible elephants, and plenty of unforgettable chaos.",
+   "body": "Thailand was one of those trips that somehow managed to feel chaotic, beautiful, funny, and deeply grounding all at the same time.\n\nMy family and I spent one week there in December 2025, splitting our time between Bangkok, Koh Samui, and Pattaya.\n\nAnd each place felt completely different.\n\nBangkok was sensory overload.\n\nKoh Samui was tropical and relaxed.\n\nPattaya gave me one of the most memorable experiences of the entire trip.\n\nBy the end of the week, Thailand had somehow given us temples, tuk-tuks, elephants, baby pigs, warm ocean water, insane traffic, and—completely unexpectedly—the best McDonald’s dessert I have ever had in my life.\n\n## Bangkok: Controlled Chaos\n\nBangkok was easily one of the most chaotic cities I have ever visited.\n\nAnd I mean that affectionately.\n\nThe traffic alone deserves its own category.\n\nCars everywhere.\n\nMotorbikes squeezing between lanes.\n\nTuk-tuks appearing from practically every direction.\n\nPeople crossing roads that looked impossible to cross.\n\nThe entire city seemed to be moving constantly.\n\nBangkok is the kind of place where you don't quietly arrive.\n\nIt hits you.\n\nNoise, heat, color, traffic, food, markets, temples—everything seems to be happening at once.\n\nAnd then there were the tuk-tuks.\n\nBangkok really did feel like the land of the tuk-tuk.\n\nThey were everywhere.\n\nTiny, loud, fast, and somehow able to squeeze into spaces where I wouldn't have confidently driven a golf cart.\n\nRiding in one feels like a combination of transportation and amusement park ride.\n\nYou're exposed to everything happening around you, which somehow makes the city feel even louder and more alive.\n\n## The River Markets\n\nOne of the things that stood out most to me in Bangkok was visiting the river markets.\n\nThis was insane in the best way.\n\nThailand's floating markets are one of those things you may have seen online before visiting, but actually being there is different.\n\nBoats move through the waterways carrying food, produce, drinks, and different goods while people shop directly along the canals.\n\nIt is busy.\n\nIt is colorful.\n\nAnd there is something fascinating about watching everyday commerce happen from boats.\n\nBetween the crowds, the water, the vendors, and the constant movement, it felt like exactly the kind of experience you travel halfway across the world to see.\n\nI would absolutely tell someone visiting Bangkok to experience one.\n\nIt is not calm.\n\nIt is not subtle.\n\nBut neither is Bangkok.\n\nAnd that is part of what makes it memorable.\n\n## The Temples\n\nBetween all the traffic and noise, Bangkok also gave us another completely different side of Thailand.\n\nThe temples were beautiful.\n\nThere is something almost jarring about leaving behind a street full of tuk-tuks, horns, traffic, and crowds and suddenly stepping into a temple complex that feels completely different.\n\nThe architecture alone is worth seeing.\n\nGold details.\n\nIntricate roofs.\n\nBright colors.\n\nStatues and carvings everywhere.\n\nEven if you are not someone who normally plans an entire trip around temples, Thailand makes them difficult to ignore.\n\nThey are woven into the identity of the country.\n\nAnd after the complete madness of Bangkok's streets, they offered a completely different kind of experience.\n\n## Koh Samui\n\nThen we went to Koh Samui.\n\nThis felt like the exhale.\n\nThe coastline was beautiful, the surrounding beaches were gorgeous, and the pace felt completely different from Bangkok.\n\nThis was the Thailand that looked more like the tropical photographs you see before traveling there.\n\nBeautiful water.\n\nBoats.\n\nBeaches.\n\nPalm trees.\n\nAnd warmer water than I expected.\n\nOne of our favorite days was spent out on the water in a traditional Thai-style boat.\n\nThere was something about seeing the coast from the sea that made the island even prettier.\n\nAnd one of our stops was Pig Beach.\n\n## Pig Beach\n\nI expected Pig Beach to be cute.\n\nI did not expect there to be so many baby pigs.\n\nThat immediately made it better.\n\nThey were wandering around the beach, and we were able to give them water and spend time watching them.\n\nThe whole thing was ridiculous and adorable.\n\nWe also went swimming, and the water surprised me.\n\nI expected it to be colder.\n\nInstead, it was wonderfully warm.\n\nIt was one of those easy vacation days where nothing especially complicated needed to happen.\n\nWarm water.\n\nBeach.\n\nBaby pigs.\n\nFamily.\n\nPretty difficult combination to complain about.\n\n## Grandfather and Grandmother Rocks\n\nKoh Samui also has one of the more oddly specific tourist attractions I have visited.\n\nHin Ta and Hin Yai—better known as Grandfather and Grandmother Rocks.\n\nYes.\n\nThey look exactly like what people say they look like.\n\nWe mostly found the entire thing hilarious.\n\nThe rock formations have become one of Koh Samui's most famous natural landmarks because of their very obvious resemblance to male and female anatomy.\n\nYou look at them.\n\nYou laugh.\n\nYou take the photo.\n\nYou move on.\n\nNot every travel experience needs to be profound.\n\nSometimes a rock is just funny.\n\n## And Somehow, McDonald’s Won\n\nI am slightly embarrassed to admit this.\n\nBut one of the food memories I still think about from Thailand is McDonald's.\n\nSpecifically the KitKat Milo McFlurry.\n\nIt was ridiculous.\n\nAnd incredible.\n\nI have tried McDonald’s in plenty of places, and Thailand somehow had the best one.\n\nThe combination of KitKat and Milo should absolutely exist everywhere.\n\nI don't know why it doesn't.\n\nOut of all the beautiful beaches, Thai food, markets and temples we experienced, somehow this McFlurry still earned a permanent place in my memory.\n\nTravel is humbling like that.\n\nYou can fly across the world expecting some life-changing culinary discovery and sometimes the thing you end up talking about months later comes in a paper cup with a plastic spoon.\n\n## Pattaya and the Elephants\n\nThen came the part of the trip that meant the most to me.\n\nThe elephant sanctuary.\n\nI had spent months researching before we went.\n\nElephant tourism in Thailand can be controversial, and I had heard enough stories about poor treatment that I was very cautious about where we chose to visit.\n\nI did not want an experience that involved forcing animals to perform for tourists.\n\nI wanted something where we could actually spend time around elephants in a way that felt respectful.\n\nWhat we experienced became one of the most memorable days of my entire trip.\n\nWe spent most of the day with a family of elephants.\n\nWe fed them.\n\nWe watched them.\n\nWe learned about their behavior.\n\nAnd toward the end, we were able to bathe them.\n\nBeing that close to an elephant is completely different from seeing one from a distance.\n\nYou understand how enormous they are immediately.\n\nStanding next to one makes you feel very small.\n\nBut what surprised me was how gentle they seemed.\n\nThere is something grounding about being beside an animal that powerful and watching it move so calmly.\n\nFor most of the day, we simply observed them being elephants.\n\nAnd that ended up being the best part.\n\n## The Sand Was Their Sunscreen\n\nOne of the most interesting things we learned happened after bathing them.\n\nYou wash an elephant.\n\nThe elephant gets nice and clean.\n\nAnd then almost immediately it goes and throws sand and dirt all over itself again.\n\nAt first you're thinking:\n\nWe literally just washed you.\n\nBut there is a reason.\n\nElephants coat themselves in mud, sand, and dust to help protect their skin from the sun and insects and to help regulate their body temperature.\n\nSo what looked like the elephant immediately undoing all our work was actually completely natural behavior.\n\nIt was their version of sunscreen.\n\nThat small detail stayed with me because it reminded me that the best part of the experience wasn't touching or bathing the elephants.\n\nIt was learning about them.\n\nWatching them behave naturally.\n\nSeeing how they interacted with each other.\n\nUnderstanding even a tiny bit more about how they live.\n\n## Thailand Had Every Personality\n\nLooking back, what I remember most about Thailand is how dramatically the trip changed depending on where we were.\n\nBangkok was chaos.\n\nBeautiful chaos, but chaos.\n\nTraffic, tuk-tuks, markets, crowds, temples, noise.\n\nEverything was happening at once.\n\nKoh Samui felt like a completely different country.\n\nBeaches.\n\nBoats.\n\nWarm water.\n\nBaby pigs.\n\nPretty coastline.\n\nA much slower pace.\n\nAnd Pattaya gave us something completely different again.\n\nThe elephant sanctuary was not about scenery or excitement.\n\nIt was quieter.\n\nIt made me stop.\n\nWatching those animals and realizing how powerful yet gentle they were was one of those travel moments where you become very aware of where you are and how lucky you are to be experiencing it.\n\n## What I Would Do Again\n\nI would absolutely ride the tuk-tuks again.\n\nI would go back to the floating markets.\n\nI would spend another day on the water around Koh Samui.\n\nI would happily visit Pig Beach again.\n\nI would laugh at Grandfather and Grandmother Rocks again.\n\nI would order the KitKat Milo McFlurry again without hesitation.\n\nAnd most importantly, I would choose the elephant sanctuary again.\n\nThat day alone made the trip worth remembering.\n\n## What Thailand Left Me With\n\nWhen I think about Thailand, I don't think of one single image.\n\nI think of a collection of completely different memories.\n\nTuk-tuks weaving through Bangkok traffic.\n\nBoats moving through river markets.\n\nGolden temples appearing in the middle of the city.\n\nWarm ocean water in Koh Samui.\n\nBaby pigs drinking water on a beach.\n\nMy family laughing at rocks with an unfortunate resemblance to human anatomy.\n\nA McFlurry that had absolutely no business being that good.\n\nAnd elephants.\n\nHuge, calm, gentle elephants covering themselves in sand almost immediately after we had finished bathing them.\n\nThailand was not one kind of trip.\n\nIt was loud.\n\nIt was beautiful.\n\nIt was funny.\n\nIt was hectic.\n\nAnd at times, it was unexpectedly peaceful.\n\nOne week was nowhere near enough.\n\nBut it was enough to make me want to go back.\n\n[photos]",
+   "caption": "Unforgettable Thailand",
+   "cover": "images/thailand-cover.jpg",
+   "gallery": [
+    "images/thailand-1.jpg",
+    "images/thailand-2.jpg",
+    "images/thailand-3.jpg"
+   ]
+  }
+ ]
+}
+</script>
+<script id="main">
+(function(){
+const RESET = ':root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}';
+const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Jost:wght@300;400;500&display=swap">';
+const ORIGINAL = document.getElementById("content").textContent.trim();
+let C = JSON.parse(ORIGINAL);
+const MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+function dateKey(s){
+  s = String(s||"").toLowerCase();
+  const ys = s.match(/\b(?:19|20)\d{2}\b/g); if(!ys) return null;
+  const mm = s.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+  return +ys[ys.length-1] * 100 + (mm ? MONTHS.indexOf(mm[1]) + 1 : 0);
+}
+function postOrder(){ return (C.site && C.site.postOrder) === "oldest" ? "oldest" : "newest"; }
+function sortPosts(){
+  const dir = postOrder() === "oldest" ? 1 : -1;
+  C.posts.sort((a,b)=>{
+    const ka = dateKey(a.date), kb = dateKey(b.date);
+    if(ka == null && kb == null) return 0;
+    if(ka == null) return 1;
+    if(kb == null) return -1;
+    return (ka - kb) * dir;
+  });
+}
+sortPosts();
+const BASE = JSON.stringify(C);
+const app = document.getElementById("app"), ui = document.getElementById("ui");
+
+let editing = false, canEdit = false, artifactNS = null, assets = null;
+let itinIdx = 0, panel = null, uploadPath = null, saving = false, msg = "";
+
+/* ---------- helpers ---------- */
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rich = s => esc(s).replace(/\*([^*]+)\*/g, "<i>$1</i>");
+function getP(path){ return path.split(".").reduce((o,k)=> o == null ? undefined : o[k], C); }
+function setP(path, val){ const ks = path.split("."); const last = ks.pop(); const o = ks.reduce((o,k)=>o[k], C); o[last] = val; }
+function T(tag, key, cls, opts){
+  opts = opts || {};
+  const v = getP(key);
+  const ce = editing ? ' contenteditable="plaintext-only" spellcheck="true"' : "";
+  const multi = opts.multi ? ' data-multi="1"' : "";
+  let inner;
+  if(editing) inner = esc(v);
+  else if(opts.multi) inner = String(v||"").split(/\n\s*\n/).filter(x=>x.trim()).map(p=>`<p>${esc(p.trim())}</p>`).join("");
+  else inner = opts.rich ? rich(v) : esc(v);
+  return `<${tag} class="${cls||""}${opts.multi?" multi":""}" data-k="${key}"${multi}${ce}>${inner}</${tag}>`;
+}
+function slot(path, label, cls){
+  const id = getP(path);
+  const tools = editing && assets ? `<div class="tools"><button type="button" data-act="upload" data-p="${path}">${id?"Replace":"Add photo"}</button>${id?`<button type="button" data-act="unphoto" data-p="${path}">Remove</button>`:""}</div>` : "";
+  return `<figure class="slot ${cls||""}" data-p="${path}">${id?`<img src="${esc(id.indexOf("/")>=0 ? id : "/_blob/"+id)}" alt="${esc(label)}" loading="lazy">`:`<div class="empty">${editing?esc(label):""}</div>`}${tools}</figure>`;
+}
+const isDirty = () => JSON.stringify(C) !== BASE;
+
+/* ---------- views ---------- */
+function header(){
+  return `<header><div class="wrap"><a class="logo" href="#top"><b>MRF</b><span>Travels</span></a>
+  <nav aria-label="Main"><a href="#services">Services</a><a href="#itineraries">Itineraries</a><a href="#journal">Journal</a><a href="#about">About</a><a class="cta" href="#inquire">Inquire</a></nav></div></header>`;
+}
+function footer(){
+  return `<footer><div class="wrap"><b>MRF Travels</b>${T("span","site.footer")}</div></footer>`;
+}
+function home(){
+  const s = C.site;
+  const it = C.itineraries;
+  if(itinIdx >= it.length) itinIdx = Math.max(0, it.length - 1);
+  const cur = it[itinIdx];
+  const tabs = it.length > 1 ? `<div class="itin-tabs">${it.map((x,i)=>`<button type="button" data-act="tab" data-i="${i}" aria-pressed="${i===itinIdx}">${esc(x.title)}</button>`).join("")}</div>` : "";
+  const itinCard = cur ? `<div class="itin" aria-label="Sample itinerary">
+      <div class="top"><h3>${esc(cur.title)}</h3><span class="for">${esc(cur.meta)}</span></div>
+      <dl>${cur.days.map(d=>`<div class="day"><dt>${esc(d.label)}</dt><dd><b>${esc(d.title)}</b>${esc(d.text)}</dd></div>`).join("")}</dl>
+      ${cur.foot?`<div class="foot">${esc(cur.foot)}</div>`:""}</div>` : "";
+  const P = C.posts;
+  const feature = P[0] ? `<a class="feature-post" href="#post-${P[0].id}">${slot("posts.0.cover", P[0].place+" cover")}
+      <div><div class="label">${postOrder()==="oldest"?"Where it began":"Latest"}</div><h3>${esc(P[0].title)}</h3><p>${esc(P[0].excerpt)}</p><div class="meta" style="margin-bottom:20px">${esc(P[0].place)} · ${esc(P[0].date)}</div><span class="more">Read the story</span></div></a>`
+    : `<div class="empty-note">No journal posts yet.</div>`;
+  const grid = P.slice(1).map((p,j)=>`<a class="post-card" href="#post-${p.id}">${slot(`posts.${j+1}.cover`, p.place+" cover")}
+      <div class="meta">${esc(p.place)} · ${esc(p.date)}</div><h3>${esc(p.title)}</h3><p>${esc(p.excerpt)}</p></a>`).join("");
+
+  return `<main>
+  <div class="hero" id="top">${slot("photos.hero","Hero photo")}<div class="shade"></div>
+    <div class="wrap">${T("div","site.heroLabel","label")}${T("h1","site.heroTitle","",{rich:1})}${T("p","site.heroText")}
+    ${editing ? `<span class="btn solid">${T("span","site.heroButton")}</span>` : `<a class="btn solid" href="#inquire">${esc(s.heroButton)}</a>`}</div></div>
+
+  <section id="services"><div class="wrap">
+    <div class="intro"><div>${T("div","site.servicesLabel","label")}${T("h2","site.servicesTitle")}</div>${T("p","site.servicesIntro")}</div>
+    <div class="services">${C.services.map((x,i)=>`<div>${T("div",`services.${i}.label`,"label")}${T("h3",`services.${i}.title`)}${T("p",`services.${i}.text`)}</div>`).join("")}</div>
+  </div></section>
+
+  <div class="process-band" id="itineraries"><section><div class="wrap">
+    <div>${T("div","site.processLabel","label")}${T("h2","site.processTitle")}
+      <ol class="steps">${C.steps.map((x,i)=>`<li><span class="n">${["i.","ii.","iii.","iv.","v.","vi."][i]||(i+1)+"."}</span><div>${T("b",`steps.${i}.title`)}${T("span",`steps.${i}.text`)}</div></li>`).join("")}</ol>
+    </div>
+    <div class="itin-col">
+      ${tabs}${itinCard}
+      <div class="ed-only ed-row">${cur?`<button class="ed-btn" type="button" data-act="edit-itin">Edit this itinerary</button>`:""}<button class="ed-btn" type="button" data-act="new-itin">Add an itinerary</button></div>
+    </div>
+  </div></section></div>
+
+  <section id="journal"><div class="wrap">
+    <div class="intro"><div>${T("div","site.journalLabel","label")}${T("h2","site.journalTitle")}</div>${T("p","site.journalIntro")}</div>
+    <div class="ed-only ed-row"><button class="ed-btn solid" type="button" data-act="new-post">New journal post</button><select id="post-order" aria-label="Order of journal posts"><option value="newest" ${postOrder()==="newest"?"selected":""}>Newest trip first</option><option value="oldest" ${postOrder()==="oldest"?"selected":""}>Oldest trip first</option></select><span class="ed-hint">Posts sort by their date automatically. Open any post to edit its story and photos.</span></div>
+    ${feature}<div class="post-grid">${grid}</div>
+  </div></section>
+
+  <section class="about" id="about"><div class="wrap">
+    ${slot("photos.about","Your portrait")}
+    <div>${T("div","site.aboutLabel","label")}${T("h2","site.aboutTitle")}<hr class="rule">${T("div","site.aboutText","",{multi:1})}${T("div","site.signature","sig")}</div>
+  </div></section>
+
+  <section class="inquire" id="inquire"><div class="wrap">
+    <div>${T("div","site.inquireLabel","label")}${T("h2","site.inquireTitle")}${T("p","site.inquireText")}
+      <div class="contact-lines">${T("span","site.email")}${T("span","site.hours")}</div></div>
+    <form id="inquiry" novalidate>
+      <label>Name<input id="q-name" autocomplete="name" placeholder="Full name"></label>
+      <label>Email<input id="q-email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label>Destination<input id="q-dest" placeholder="e.g. Amalfi Coast, or undecided"></label>
+      <label>Travel dates<input id="q-dates" placeholder="e.g. June 2027, 10 nights"></label>
+      <label>Travelers<select id="q-pax"><option>1</option><option selected>2</option><option>3–4</option><option>5+</option></select></label>
+      <label>Occasion<select id="q-occ"><option>Leisure</option><option>Honeymoon</option><option>Anniversary</option><option>Celebration</option><option>Family</option></select></label>
+      <label class="full">Tell me more<textarea id="q-notes" placeholder="Pace, hotel style, must-haves, anything to avoid"></textarea></label>
+      <div class="full" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"><button class="btn solid" type="submit">Send inquiry</button><p class="form-note" id="form-note" aria-live="polite"></p></div>
+    </form>
+  </div></section>
+  </main>`;
+}
+function inline(s){
+  return esc(s).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+}
+function bodyHTML(text){
+  return String(text||"").split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>
+    b.startsWith("### ") ? `<h3>${inline(b.slice(4))}</h3>`
+    : b.startsWith("## ") ? `<h2>${inline(b.slice(3))}</h2>` : `<p>${inline(b)}</p>`).join("");
+}
+function article(i){
+  const p = C.posts[i];
+  const parts = String(p.body||"").split(/^\s*\[photos\]\s*$/m);
+  const before = parts[0], after = parts.slice(1).join("\n\n");
+  const gal = `<div class="gallery">${[0,1,2].map(n=>slot(`posts.${i}.gallery.${n}`, `Gallery photo ${n+1}`)).join("")}</div>${p.caption?`<p class="caption">${esc(p.caption)}</p>`:""}`;
+  return `<article class="article"><div class="wrap">
+    <a class="back" href="#journal">← The Journal</a>
+    <div class="ed-only ed-row" style="margin-top:20px"><button class="ed-btn solid" type="button" data-act="edit-post" data-i="${i}">Edit this post</button></div>
+    <div class="head"><div class="label">${esc(p.place)}</div><h1>${esc(p.title)}</h1><div class="meta">${esc(p.date)}${p.read?" · "+esc(p.read):""}</div></div>
+  </div>
+  ${slot(`posts.${i}.cover`, "Cover photo", "cover")}
+  <div class="wrap"><div class="body first">${bodyHTML(before)}</div>${gal}<div class="body">${bodyHTML(after)}</div></div>
+  </article>`;
+}
+
+function currentPost(){
+  const h = location.hash.slice(1);
+  if(!h.startsWith("post-")) return -1;
+  return C.posts.findIndex(p=>"post-"+p.id === h);
+}
+function render(keepScroll){
+  const y = window.scrollY;
+  const pi = currentPost();
+  app.innerHTML = header() + (pi >= 0 ? article(pi) : home()) + footer();
+  document.body.classList.toggle("editing", editing);
+  if(keepScroll) window.scrollTo(0, y);
+  renderUI();
+}
+
+/* ---------- edit UI ---------- */
+function renderUI(){
+  if(!canEdit){ ui.innerHTML = ""; return; }
+  let html = `<input type="file" id="file-input" accept="image/*" hidden>`;
+  if(!editing){
+    html += `<button class="edit-launch" type="button" data-act="start-edit">Edit site</button>`;
+  } else {
+    const dirty = isDirty();
+    const status = saving ? "Publishing…" : msg ? esc(msg) : dirty ? "You have unpublished changes" : "Everything is published";
+    html += `<div class="bar"><div class="in"><div class="status">${status}<small>Click any outlined text to change it. Wrap words in *asterisks* in the headline for gold italics.</small></div>
+      <button class="ed-btn" type="button" data-act="discard" ${dirty&&!saving?"":"disabled"}>Discard changes</button>
+      <button class="ed-btn solid" type="button" data-act="publish" ${dirty&&!saving?"":"disabled"}>Publish changes</button>
+      <button class="ed-btn" type="button" data-act="stop-edit" ${dirty?"disabled":""}>Done</button></div></div>`;
+  }
+  if(editing && panel) html += panelHTML();
+  ui.innerHTML = html;
+}
+
+function field(lbl, f, val, opts){
+  opts = opts || {};
+  return opts.area
+    ? `<label>${lbl}<textarea data-f="${f}" class="${opts.big?"big":""}">${esc(val)}</textarea></label>`
+    : `<label>${lbl}<input data-f="${f}" value="${esc(val)}"></label>`;
+}
+function panelHTML(){
+  if(panel.kind === "post"){
+    const p = C.posts[panel.i];
+    if(!p) return "";
+    return `<div class="panel" role="dialog" aria-label="Edit journal post"><div class="ph"><h2>Journal post</h2><button class="ed-btn" type="button" data-act="close-panel">Done</button></div>
+      ${field("Title","title",p.title)}${field("Place","place",p.place)}
+      ${field("Date","date",p.date)}${field("Reading time","read",p.read)}
+      ${field("Short summary (shown on the journal list)","excerpt",p.excerpt,{area:1})}
+      ${field("Story","body",p.body,{area:1,big:1})}
+      <p class="help">Leave a blank line between paragraphs. Start a line with ## for a subheading (### for a smaller one). Wrap words in **double asterisks** for bold or *single asterisks* for italics. Posts re-sort by date automatically, so write dates like "May 2024". Put [photos] on its own line where the three-photo gallery should appear.</p>
+      ${field("Gallery caption","caption",p.caption)}
+      <p class="help">Add the cover and gallery photos right on the page with the Add photo buttons.</p>
+      <div><button class="ed-btn danger" type="button" data-act="del-post">${panel.confirm?"Click again to delete this post":"Delete post"}</button></div></div>`;
+  }
+  if(panel.kind === "itin"){
+    const it = C.itineraries[panel.i];
+    if(!it) return "";
+    return `<div class="panel" role="dialog" aria-label="Edit itinerary"><div class="ph"><h2>Itinerary</h2><button class="ed-btn" type="button" data-act="close-panel">Done</button></div>
+      ${field("Destination","title",it.title)}${field("Details line","meta",it.meta)}
+      ${it.days.map((d,j)=>`<div class="day-ed">
+        <label>Label<input data-day="${j}" data-f="label" value="${esc(d.label)}"></label>
+        <label>Heading<input data-day="${j}" data-f="title" value="${esc(d.title)}"></label>
+        <label>Description<textarea data-day="${j}" data-f="text">${esc(d.text)}</textarea></label>
+        <div class="acts"><button class="ed-btn" type="button" data-act="day-up" data-j="${j}" ${j===0?"disabled":""}>Move up</button><button class="ed-btn" type="button" data-act="day-down" data-j="${j}" ${j===it.days.length-1?"disabled":""}>Move down</button><button class="ed-btn danger" type="button" data-act="day-del" data-j="${j}">Remove day</button></div>
+      </div>`).join("")}
+      <div><button class="ed-btn solid" type="button" data-act="day-add">Add a day</button></div>
+      ${field("Closing line","foot",it.foot)}
+      <div><button class="ed-btn danger" type="button" data-act="del-itin">${panel.confirm?"Click again to delete this itinerary":"Delete itinerary"}</button></div></div>`;
+  }
+  return "";
+}
+
+function changed(){
+  try{ localStorage.setItem("mrf-draft", JSON.stringify({base: BASE, draft: C})); }catch(e){}
+  msg = "";
+}
+function refreshBar(){
+  const bar = ui.querySelector(".bar"); if(!bar) return;
+  const dirty = isDirty();
+  bar.querySelector(".status").firstChild.textContent = dirty ? "You have unpublished changes" : "Everything is published";
+  bar.querySelector('[data-act="discard"]').disabled = !dirty;
+  bar.querySelector('[data-act="publish"]').disabled = !dirty;
+  bar.querySelector('[data-act="stop-edit"]').disabled = dirty;
+}
+
+/* inline text */
+app.addEventListener("input", e=>{
+  const el = e.target.closest && e.target.closest("[data-k]");
+  if(!el || !editing) return;
+  let v = el.innerText.replace(/ /g," ");
+  if(!el.dataset.multi) v = v.replace(/\s*\n\s*/g," ");
+  setP(el.dataset.k, v.replace(/\n+$/,""));
+  changed(); refreshBar();
+});
+app.addEventListener("keydown", e=>{
+  const el = e.target.closest && e.target.closest("[data-k]");
+  if(el && editing && e.key === "Enter" && !el.dataset.multi){ e.preventDefault(); el.blur(); }
+});
+app.addEventListener("click", e=>{
+  if(editing && e.target.closest("[data-k]") && e.target.closest("a")) e.preventDefault();
+});
+
+/* panel fields */
+ui.addEventListener("input", e=>{
+  const t = e.target; if(!t.dataset || !t.dataset.f || !panel) return;
+  if(panel.kind === "post") C.posts[panel.i][t.dataset.f] = t.value;
+  else if(t.dataset.day != null) C.itineraries[panel.i].days[+t.dataset.day][t.dataset.f] = t.value;
+  else C.itineraries[panel.i][t.dataset.f] = t.value;
+  if(panel.kind === "post" && t.dataset.f === "date"){ const id = C.posts[panel.i].id; sortPosts(); panel.i = C.posts.findIndex(p=>p.id===id); }
+  changed();
+  const y = window.scrollY;
+  app.innerHTML = header() + (currentPost() >= 0 ? article(currentPost()) : home()) + footer();
+  window.scrollTo(0,y);
+  refreshBar();
+});
+
+/* actions */
+document.addEventListener("click", async e=>{
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const act = b.dataset.act;
+  if(["upload","unphoto"].includes(act)){ e.preventDefault(); e.stopPropagation(); }
+  switch(act){
+    case "tab": itinIdx = +b.dataset.i; render(true); break;
+    case "start-edit": editing = true; offerDraft(); render(true); break;
+    case "stop-edit": if(!isDirty()){ editing = false; panel = null; render(true); } break;
+    case "discard": C = JSON.parse(BASE); panel = null; try{localStorage.removeItem("mrf-draft")}catch(err){} msg = "Changes discarded"; render(true); break;
+    case "publish": publish(); break;
+    case "close-panel": panel = null; render(true); break;
+    case "upload": uploadPath = b.dataset.p; document.getElementById("file-input").click(); break;
+    case "unphoto": setP(b.dataset.p, ""); changed(); render(true); break;
+    case "new-post": {
+      const id = "p" + Date.now().toString(36);
+      C.posts.unshift({id, place:"Destination", title:"New journal post", date:new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"}), read:"5 min read", excerpt:"A one-line summary of this trip.", body:"Start writing your story here.\n\n[photos]\n\n## A subheading\n\nMore of the story.", caption:"", cover:"", gallery:["","",""]});
+      sortPosts(); changed(); panel = {kind:"post", i:C.posts.findIndex(p=>p.id===id)}; location.hash = "post-" + id; break;
+    }
+    case "edit-post": panel = {kind:"post", i:+b.dataset.i}; render(true); break;
+    case "del-post":
+      if(!panel.confirm){ panel.confirm = true; renderUI(); break; }
+      C.posts.splice(panel.i,1); panel = null; changed(); location.hash = "journal"; render(); break;
+    case "new-itin":
+      C.itineraries.push({id:"i"+Date.now().toString(36), title:"New destination", meta:"7 nights · for two", foot:"", days:[{label:"Day 1", title:"Arrival", text:"Describe the day."}]});
+      itinIdx = C.itineraries.length - 1; panel = {kind:"itin", i:itinIdx}; changed(); render(true); break;
+    case "edit-itin": panel = {kind:"itin", i:itinIdx}; render(true); break;
+    case "del-itin":
+      if(!panel.confirm){ panel.confirm = true; renderUI(); break; }
+      C.itineraries.splice(panel.i,1); panel = null; itinIdx = 0; changed(); render(true); break;
+    case "day-add": { const d = C.itineraries[panel.i].days; d.push({label:"Day "+(d.length+1), title:"", text:""}); changed(); render(true); break; }
+    case "day-del": C.itineraries[panel.i].days.splice(+b.dataset.j,1); changed(); render(true); break;
+    case "day-up": case "day-down": {
+      const d = C.itineraries[panel.i].days, j = +b.dataset.j, k = act==="day-up" ? j-1 : j+1;
+      [d[j], d[k]] = [d[k], d[j]]; changed(); render(true); break;
+    }
+  }
+});
+
+document.addEventListener("change", async e=>{
+  if(e.target.id === "post-order"){ C.site.postOrder = e.target.value; sortPosts(); changed(); render(true); return; }
+  if(e.target.id !== "file-input") return;
+  const file = e.target.files[0]; e.target.value = "";
+  if(!file || !uploadPath || !assets) return;
+  const path = uploadPath;
+  document.querySelectorAll(`.slot[data-p="${path}"]`).forEach(x=>x.classList.add("busy"));
+  try{
+    const res = await assets.upload(file);
+    setP(path, res.id); changed(); msg = "";
+  }catch(err){ msg = "That photo didn't upload. Try a JPG or PNG under 20 MB."; }
+  render(true);
+});
+
+function offerDraft(){
+  try{
+    const raw = localStorage.getItem("mrf-draft"); if(!raw) return;
+    const d = JSON.parse(raw);
+    if(d.base === BASE && JSON.stringify(d.draft) !== BASE){ C = d.draft; sortPosts(); msg = "Restored your unpublished changes from last time"; }
+    else localStorage.removeItem("mrf-draft");
+  }catch(e){}
+}
+
+/* ---------- publish ---------- */
+function buildDoc(){
+  const css = document.getElementById("css").textContent;
+  const main = document.getElementById("main").textContent;
+  const json = JSON.stringify(C, null, 1).replace(/</g, "\\u003c");
+  const SC = "</scr" + "ipt>";
+  return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + RESET + '</style></head><body>\n'
+    + '<title>MRF Travels</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' + FONTS + '\n'
+    + '<style id="css">' + css + '</style>\n\n<div id="app"></div>\n<div id="ui"></div>\n\n'
+    + '<script type="application/json" id="content">\n' + json + '\n' + SC + '\n\n'
+    + '<script id="main">' + main + SC + '\n\n</body></html>';
+}
+async function publish(){
+  if(!artifactNS || saving) return;
+  saving = true; panel = null; renderUI();
+  try{
+    await artifactNS.publish(buildDoc());
+    try{ localStorage.removeItem("mrf-draft"); }catch(e){}
+    msg = "Published. Reloading the new version…";
+  }catch(err){
+    const code = err && err.code;
+    msg = code === "conflict" ? "A newer version was just published elsewhere. The page is reloading to it; your edits are kept as a draft."
+      : (code === "not_writer" || code === "not_granted" || code === "capability_disabled") ? "This view can't save changes. Open the page from your own account to edit."
+      : code === "too_large" ? "The page is too large to save. Try removing a photo."
+      : code === "rate_limited" ? "Too many saves in a row. Wait a minute, then publish again."
+      : "Publishing didn't go through. Try again in a moment.";
+  }
+  saving = false; renderUI();
+}
+
+/* ---------- inquiry form ---------- */
+app.addEventListener("submit", e=>{
+  if(e.target.id !== "inquiry") return;
+  e.preventDefault();
+  const note = document.getElementById("form-note");
+  const name = document.getElementById("q-name").value.trim();
+  const email = document.getElementById("q-email").value.trim();
+  if(!name || !/^\S+@\S+\.\S+$/.test(email)){ note.textContent = "Please add your name and a valid email."; return; }
+  const v = id => (document.getElementById(id).value || "").trim();
+  const body = `Name: ${name}\nEmail: ${email}\nDestination: ${v("q-dest")}\nTravel dates: ${v("q-dates")}\nTravelers: ${v("q-pax")}\nOccasion: ${v("q-occ")}\n\n${v("q-notes")}`;
+  location.href = "mailto:" + C.site.email + "?subject=" + encodeURIComponent("Trip inquiry from " + name) + "&body=" + encodeURIComponent(body);
+  note.textContent = "Your email app should open with your inquiry ready to send. If it doesn't, write to " + C.site.email + ".";
+});
+
+/* ---------- routing ---------- */
+window.addEventListener("hashchange", ()=>{
+  const pi = currentPost();
+  if(panel && panel.kind === "post" && pi !== panel.i) panel = null;
+  render();
+  const h = location.hash.slice(1);
+  if(pi >= 0) window.scrollTo(0,0);
+  else { const el = h && document.getElementById(h); if(el) el.scrollIntoView(); }
+});
+render();
+
+})();
+</script>
+</body>
+</html>
