@@ -507,6 +507,7 @@ function home(){
       <label>Travelers<select id="q-pax"><option>1</option><option selected>2</option><option>3–4</option><option>5+</option></select></label>
       <label>Occasion<select id="q-occ"><option>Leisure</option><option>Honeymoon</option><option>Anniversary</option><option>Celebration</option><option>Family</option></select></label>
       <label class="full">Tell me more<textarea id="q-notes" placeholder="Pace, hotel style, must-haves, anything to avoid"></textarea></label>
+      <input id="q-website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
       <div class="full" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"><button class="btn solid" type="submit">Send inquiry</button><p class="form-note" id="form-note" aria-live="polite"></p></div>
     </form>
   </div></section>
@@ -750,10 +751,23 @@ app.addEventListener("submit", e=>{
   const email = document.getElementById("q-email").value.trim();
   if(!name || !/^\S+@\S+\.\S+$/.test(email)){ note.textContent = "Please add your name and a valid email."; return; }
   const v = id => (document.getElementById(id).value || "").trim();
-  const body = `Name: ${name}\nEmail: ${email}\nDestination: ${v("q-dest")}\nTravel dates: ${v("q-dates")}\nTravelers: ${v("q-pax")}\nOccasion: ${v("q-occ")}\n\n${v("q-notes")}`;
-  location.href = "mailto:" + C.site.email + "?subject=" + encodeURIComponent("Trip inquiry from " + name) + "&body=" + encodeURIComponent(body);
-  note.textContent = "Your email app should open with your inquiry ready to send. If it doesn't, write to " + C.site.email + ".";
+  const form = e.target, btn = form.querySelector('button[type="submit"]');
+  const data = new URLSearchParams({
+    name, email, destination: v("q-dest"), dates: v("q-dates"), travelers: v("q-pax"),
+    occasion: v("q-occ"), notes: v("q-notes"), website: v("q-website")
+  });
+  btn.disabled = true; btn.textContent = "Sending…"; note.textContent = "";
+  fetch(INQUIRY_URL, { method: "POST", mode: "no-cors", body: data })
+    .then(()=>{
+      form.reset();
+      note.textContent = "Thank you, " + name.split(" ")[0] + ". Your inquiry is on its way, and I'll reply within two business days.";
+    })
+    .catch(()=>{
+      note.textContent = "That didn't send. Please check your connection and try again, or email " + C.site.email + ".";
+    })
+    .finally(()=>{ btn.disabled = false; btn.textContent = "Send inquiry"; });
 });
+const INQUIRY_URL = "https://script.google.com/macros/s/AKfycbxsQeijBiprofwK3WKr81bHOLVZLGaQ61XTNjJ0JZGsfFVs834wmrm2spDymdP83hAG1A/exec";
 
 /* ---------- routing ---------- */
 window.addEventListener("hashchange", ()=>{
