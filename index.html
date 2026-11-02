@@ -62,20 +62,30 @@ nav .cta:hover{background:var(--ink);color:var(--bg)}
 .editing .slot{outline:1px dashed var(--gold);outline-offset:-6px}
 
 /* hero */
-.hero{position:relative;color:var(--on-dark)}
-.hero .slot{position:absolute;inset:0}
-.hero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(8,16,13,.15) 0%,rgba(8,16,13,.72) 100%);pointer-events:none}
-.hero .wrap{position:relative;z-index:2;padding-block:180px 72px;pointer-events:none}
+/* styled after the 5x7 flyer: yacht on deep teal water, headline up top, details and button below */
+.hero{position:relative;color:#F3EEE3;background:#134A52}
+.hero .slot{position:absolute;inset:0;background:#134A52}
+.hero .slot img{object-position:50% 50%}
+.hero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(6,28,32,.5) 0%,rgba(6,28,32,.2) 42%,rgba(6,28,32,0) 68%);pointer-events:none}
+.hero .wrap{position:relative;z-index:2;min-height:clamp(600px,86vh,880px);box-sizing:border-box;padding-block:clamp(56px,9vh,96px) clamp(48px,7vh,80px);display:flex;flex-direction:column;justify-content:space-between;gap:40px;pointer-events:none}
 .hero .wrap a,.hero .wrap [data-k]{pointer-events:auto}
-.hero h1{font-size:clamp(44px,7vw,92px);max-width:13ch;letter-spacing:-.01em}
-.hero h1 i{color:#E4CFA3}
-.hero p{max-width:44ch;font-size:19px;margin:22px 0 32px;color:rgba(243,238,227,.86)}
-.hero .label{color:#E4CFA3}
+.hero .top,.hero .bottom{max-width:640px}
+.hero .label{color:#D3B47E;letter-spacing:.3em}
+.hero h1{font-size:clamp(46px,6.4vw,88px);line-height:1.04;max-width:12ch;letter-spacing:-.01em;margin-top:18px;font-weight:500}
+.hero h1 i{color:#D3B47E}
+.hero p{max-width:40ch;font-size:19px;line-height:1.55;margin:0 0 28px;color:#E6E0D4}
+.hero .btn.solid{background:#D3B47E;border-color:#D3B47E;color:#14110B}
 .editing .hero .wrap{padding-bottom:90px}
+@media (max-width:700px){
+  .hero .slot img{object-position:90% 50%}
+  .hero .shade{background:linear-gradient(180deg,rgba(6,28,32,.5) 0%,rgba(6,28,32,0) 34%,rgba(6,28,32,0) 58%,rgba(6,28,32,.6) 100%)}
+  .hero .wrap{min-height:760px;padding-block:48px 44px}
+  .hero h1{font-size:44px}
+  .hero p{font-size:17px}
+}
 .btn{display:inline-block;font:500 13px var(--body);letter-spacing:.2em;text-transform:uppercase;text-decoration:none;padding:15px 26px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer}
 .btn.solid{background:var(--gold);border-color:var(--gold);color:#14110B}
 .btn:hover{opacity:.88}
-@media (max-width:600px){.hero .wrap{padding-block:120px 48px}}
 
 /* sections */
 section{padding-block:96px}
@@ -220,9 +230,9 @@ body.editing{padding-bottom:84px}
 {
  "site": {
   "heroLabel": "Bespoke luxury travel",
-  "heroTitle": "Journeys composed *entirely* around you.",
-  "heroText": "Private itineraries, hand-picked hotels and every reservation handled, from the first call until you're home again.",
-  "heroButton": "Begin your journey",
+  "heroTitle": "Your next trip, *fully handled.*",
+  "heroText": "Custom itineraries, hand-picked hotels and every reservation booked, by your own personal travel advisor.",
+  "heroButton": "Start planning your trip",
   "servicesLabel": "What I do",
   "servicesTitle": "Travel without the planning.",
   "servicesIntro": "Every trip I design starts with a conversation about how you like to travel: the pace, the hotels, the meals worth crossing a city for. Then I build it, book it, and stay on call while you're away.",
@@ -278,7 +288,7 @@ body.editing{padding-bottom:84px}
   }
  ],
  "photos": {
-  "hero": "",
+  "hero": "images/hero-yacht.jpg",
   "about": "images/about-portrait.jpg"
  },
  "itineraries": [
@@ -467,8 +477,8 @@ function home(){
 
   return `<main>
   <div class="hero" id="top">${slot("photos.hero","Hero photo")}<div class="shade"></div>
-    <div class="wrap">${T("div","site.heroLabel","label")}${T("h1","site.heroTitle","",{rich:1})}${T("p","site.heroText")}
-    ${editing ? `<span class="btn solid">${T("span","site.heroButton")}</span>` : `<a class="btn solid" href="#inquire">${esc(s.heroButton)}</a>`}</div></div>
+    <div class="wrap"><div class="top">${T("div","site.heroLabel","label")}${T("h1","site.heroTitle","",{rich:1})}</div><div class="bottom">${T("p","site.heroText")}
+    ${editing ? `<span class="btn solid">${T("span","site.heroButton")}</span>` : `<a class="btn solid" href="#inquire">${esc(s.heroButton)}</a>`}</div></div></div>
 
   <section id="services"><div class="wrap">
     <div class="intro"><div>${T("div","site.servicesLabel","label")}${T("h2","site.servicesTitle")}</div>${T("p","site.servicesIntro")}</div>
