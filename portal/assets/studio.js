@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171606";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171700";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -506,5 +506,51 @@ document.addEventListener("submit", async (e) => {
     }
   }
 });
+
+// ---------------- chat file import (lets any Claude chat add a PDF it was given) ----------------
+// A chat encrypts the file (AES-256-GCM) and pushes only the ciphertext to the repo's "inbox" branch.
+// The key travels in the chat's call below, never on GitHub. This runs with Mya's own signed-in session.
+const INBOX = "https://raw.githubusercontent.com/Myaf2005/MRFTravels/inbox/";
+const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function importFile({ file, key, iv, name, tripId, category, title, bookingIds = [], paymentId = null, contentType = "application/pdf" }) {
+  if (S.screen !== "studio" || !S.D) throw new Error("Studio isn't signed in (password + code) in this tab.");
+  const trip = T(tripId); if (!trip) throw new Error("No trip with id " + tripId);
+  const bookings = bookingIds.map((id) => S.D.bookings.find((b) => b.id === id && b.trip_id === tripId));
+  if (bookings.some((b) => !b)) throw new Error("A booking id doesn't belong to this trip.");
+  const payment = paymentId ? S.D.payments.find((p) => p.id === paymentId && p.trip_id === tripId) : null;
+  if (paymentId && !payment) throw new Error("That payment id doesn't belong to this trip.");
+  let res;
+  for (let i = 0; i < 12; i++) { res = await fetch(INBOX + file + "?t=" + Date.now(), { cache: "no-store" }); if (res.ok) break; await new Promise((r) => setTimeout(r, 2500)); }
+  if (!res.ok) throw new Error("Couldn't find " + file + " in the inbox (" + res.status + ").");
+  const k = await crypto.subtle.importKey("raw", b64(key), "AES-GCM", false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(iv) }, k, await res.arrayBuffer()); // fails if tampered
+  const blob = new File([plain], name, { type: contentType });
+  if (blob.size > 20 * 1024 * 1024) throw new Error("Files must be under 20 MB.");
+  const cat = category || (payment ? "receipts" : bookings[0]?.kind === "flight" ? "tickets" : "confirmations");
+  const path = await uploadFile(tripId, cat, blob);
+  const docTitle = title || (payment ? `Receipt · ${payment.name}` : bookings[0]?.name) || name.replace(/\.[^.]+$/, "");
+  const { data: d, error } = await sb.from("documents").insert({ trip_id: tripId, category: cat, title: docTitle, storage_path: path }).select().single();
+  if (error) throw error;
+  // link the chosen reservations, plus any other leg of this trip with the same confirmation number
+  const confs = new Set(bookings.map((b) => (b.confirmation_no || "").trim()).filter(Boolean));
+  const linkIds = new Set(bookingIds);
+  S.D.bookings.filter((b) => b.trip_id === tripId && !b.document_id && confs.has((b.confirmation_no || "").trim())).forEach((b) => linkIds.add(b.id));
+  if (linkIds.size) { const { error: e2 } = await sb.from("bookings").update({ document_id: d.id }).in("id", [...linkIds]); if (e2) throw e2; }
+  if (payment) { const { error: e3 } = await sb.from("payments").update({ receipt_document_id: d.id }).eq("id", payment.id); if (e3) throw e3; }
+  await loadAll(); render(); toast(`"${docTitle}" added${linkIds.size ? ` and linked to ${linkIds.size} reservation${linkIds.size === 1 ? "" : "s"}` : ""}.`);
+  return { documentId: d.id, category: cat, title: docTitle, linkedBookings: [...linkIds], linkedPayment: payment?.id || null };
+}
+function snapshot(tripId) {
+  if (!S.D) return { signedIn: false };
+  const trips = S.D.trips.map((t) => ({ id: t.id, title: t.title, travelers: tripLabel(t), start: t.start_date, end: t.end_date }));
+  if (!tripId) return { signedIn: S.screen === "studio", trips };
+  return {
+    signedIn: S.screen === "studio", trip: trips.find((t) => t.id === tripId),
+    bookings: by(S.D.bookings, tripId).map((b) => ({ id: b.id, kind: b.kind, name: b.name, confirmation_no: b.confirmation_no, details: b.details, status: b.status, hasDocument: !!b.document_id })),
+    payments: by(S.D.payments, tripId).map((p) => ({ id: p.id, name: p.name, hasReceipt: !!p.receipt_document_id })),
+    documents: by(S.D.docs, tripId).map((d) => ({ id: d.id, category: d.category, title: d.title })),
+  };
+}
+window.mrf = { snapshot, importFile };
 
 boot();
