@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate } from "./lib.js?v=202611171259";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate } from "./lib.js?v=202611171600";
 
 const app = $("#app");
 const S = {
@@ -72,7 +72,7 @@ function render() {
 
 function viewSignIn() {
   return `<div class="signin">
-  <div class="hero">${BRAND}
+  <div class="hero"><div class="slides" aria-hidden="true"><i></i><i></i><i></i><i></i></div>${BRAND}
     <div class="copy"><p class="eyebrow">Client portal</p>
       <h1>Everything for your journey, <em>in one place.</em></h1>
       <p>Your itinerary, confirmations and documents, curated and kept up to date by your advisor.</p></div>

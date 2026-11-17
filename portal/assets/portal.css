@@ -63,7 +63,20 @@ textarea.input{resize:vertical;min-height:90px}
 
 /* sign in */
 .signin{display:flex;flex-wrap:wrap;min-height:100vh}
-.hero{flex:1 1 520px;min-height:520px;background:#0C343A url(sign-in.jpg) center/cover no-repeat;color:#F3EEE3;padding:56px 64px;display:flex;flex-direction:column;gap:48px}
+.hero{flex:1 1 520px;min-height:520px;background:#0C343A url(sign-in.jpg) center/cover no-repeat;color:#F3EEE3;padding:56px 64px;display:flex;flex-direction:column;gap:48px;position:relative;overflow:hidden}
+/* Sign-in photos crossfade every 7 s: the yacht (ours) plus three Unsplash-licensed photos */
+.hero .slides{position:absolute;inset:0;z-index:0}
+.hero .slides i{position:absolute;inset:0;background:#0C343A center/cover no-repeat;opacity:0;animation:mrfFade 28s infinite}
+.hero .slides i:nth-child(1){background-image:url(sign-in.jpg);animation-delay:0s}
+.hero .slides i:nth-child(2){background-image:url("https://images.unsplash.com/photo-1620483829646-8fb1d8162108?auto=format&fit=crop&w=1400&h=2000&q=80");background-position:center 65%;animation-delay:7s}
+.hero .slides i:nth-child(3){background-image:url("https://images.unsplash.com/photo-1759862577214-447b51f1452d?auto=format&fit=crop&w=1400&h=2000&q=80");animation-delay:14s}
+.hero .slides i:nth-child(4){background-image:url("https://images.unsplash.com/photo-1539223583194-b66100fa7273?auto=format&fit=crop&w=1400&h=2000&q=80");animation-delay:21s}
+.hero .slides::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,32,36,.55) 0%,rgba(8,32,36,.2) 50%,rgba(8,32,36,0) 70%,rgba(8,32,36,.35) 100%)}
+.hero>:not(.slides){position:relative;z-index:1}
+@keyframes mrfFade{0%{opacity:0}5%{opacity:1}25%{opacity:1}30%{opacity:0}100%{opacity:0}}
+.hero .slides i:nth-child(1){opacity:1;animation-name:mrfFadeFirst}
+@keyframes mrfFadeFirst{0%{opacity:1}25%{opacity:1}30%{opacity:0}95%{opacity:0}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.hero .slides i{animation:none}.hero .slides i:nth-child(1){opacity:1}}
 .hero .logo b{color:#F3EEE3}.hero .logo span{color:#D3B47E}
 .hero .copy{max-width:62%;margin-top:7vh;display:flex;flex-direction:column;gap:18px}
 .hero h1{font-size:46px;line-height:1.08}
