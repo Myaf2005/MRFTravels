@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171645";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171715";
 
 const app = $("#app");
 const S = {
@@ -66,12 +66,13 @@ function previewBar() {
     <a class="btn gold sm" href="studio/">Back to Studio</a></span></div></div>`;
 }
 
+const isPast = (t) => { const e = t.end_date || t.start_date; return e ? (daysUntil(e) ?? 0) < 0 : false; };
 async function loadTrips() {
   const { data: trips } = await sb.from("trips").select("*").order("start_date", { ascending: true });
   S.trips = trips || [];
   let saved; try { saved = localStorage.getItem("mrf-trip"); } catch {}
-  const upcoming = S.trips.find((t) => (daysUntil(t.end_date) ?? 0) >= 0);
-  S.tripId = (S.trips.find((t) => t.id === saved) || upcoming || S.trips[0] || {}).id || null;
+  const upcoming = S.trips.find((t) => !isPast(t));
+  S.tripId = (S.trips.find((t) => t.id === saved) || upcoming || S.trips[S.trips.length - 1] || {}).id || null;
   if (S.tripId) await loadTrip();
 }
 
@@ -147,6 +148,20 @@ function viewSetup() {
   </form></div>`;
 }
 
+function secTrips() {
+  const row = (x) => `<button class="rowbtn" type="button" data-act="pickTrip" data-v="${x.id}">${ICON_DOC.replace("M14 3H6", "M14 3H6")}<span style="flex:1;min-width:0"><span class="nm" style="display:block">${esc(x.title)}</span>
+    <span class="muted" style="font-size:13px">${x.start_date ? esc(datesLine(x)) : "Dates coming soon"}${x.travelers ? " · " + esc(x.travelers) : ""}</span></span>
+    <span class="eyebrow" style="font-size:11px">${x.id === S.tripId ? "Viewing" : "Open"}</span></button>`;
+  const up = S.trips.filter((x) => !isPast(x)), past = S.trips.filter(isPast).reverse();
+  return head("Your trips", "Every journey with Mya") +
+    `<section class="card"><h2 style="font-size:26px;margin-bottom:6px">Upcoming</h2>${up.length ? up.map(row).join("") : `<p class="empty">Nothing booked yet. Your next trip will appear here.</p>`}</section>
+    ${past.length ? `<section class="card"><h2 style="font-size:26px;margin-bottom:6px">Past trips</h2>${past.map(row).join("")}</section>` : ""}`;
+}
+function tripOptions() {
+  const opt = (x) => `<option value="${x.id}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.title)}</option>`;
+  const up = S.trips.filter((x) => !isPast(x)), past = S.trips.filter(isPast).reverse();
+  return (up.length ? `<optgroup label="Upcoming">${up.map(opt).join("")}</optgroup>` : "") + (past.length ? `<optgroup label="Past trips">${past.map(opt).join("")}</optgroup>` : "");
+}
 const SECTIONS = [["overview", "Overview"], ["itinerary", "Itinerary"], ["bookings", "Reservations"], ["documents", "Documents"],
   ["costs", "Trip costs"], ["essentials", "Before you go"], ["updates", "Updates & reminders"]];
 
@@ -154,7 +169,7 @@ function viewPortal() {
   const t = trip();
   const unread = S.d ? S.d.updates.filter((u) => !S.d.read.has(u.id)).length : 0;
   const header = previewBar() + `<header class="top"><div class="in">${BRAND}<div class="r">
-    ${S.trips.length > 1 ? `<label class="sr" for="trip-pick">Choose a trip</label><select id="trip-pick" class="input" style="width:auto;min-height:44px;font-size:15px" data-change="trip">${S.trips.map((x) => `<option value="${x.id}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>` : ""}
+    ${S.trips.length > 1 ? `<label class="sr" for="trip-pick">Choose a trip</label><select id="trip-pick" class="input" style="width:auto;min-height:44px;font-size:15px" data-change="trip">${tripOptions()}</select>` : ""}
     ${t ? `<button class="icon-btn" type="button" data-act="go" data-v="updates" aria-label="Updates${unread ? `, ${unread} unread` : ""}"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${unread ? `<span class="count">${unread}</span>` : ""}</button>` : ""}
     <span class="avatar" aria-hidden="true">${esc(initials(S.profile.full_name))}</span><span>${esc(S.profile.full_name)}</span>
     <button class="btn line sm" type="button" data-act="signout">Sign out</button></div></div></header>`;
@@ -162,9 +177,9 @@ function viewPortal() {
     return header + `<div class="centered" style="min-height:60vh"><div class="panel-card" style="text-align:center;align-items:center">
       <h2 style="font-size:34px">Your trip is being prepared</h2><p class="muted">Mya is building your itinerary. You'll see everything here as soon as it's ready.</p></div></div>`;
   }
-  const nav = SECTIONS.map(([k, l]) => `<button class="nav" type="button" data-act="go" data-v="${k}" ${S.section === k ? 'aria-current="page"' : ""}>${l}${k === "updates" && unread ? `<span class="count">${unread}</span>` : ""}</button>`).join("");
+  const nav = (S.trips.length > 1 ? [...SECTIONS, ["trips", "Your trips"]] : SECTIONS).map(([k, l]) => `<button class="nav" type="button" data-act="go" data-v="${k}" ${S.section === k ? 'aria-current="page"' : ""}>${l}${k === "updates" && unread ? `<span class="count">${unread}</span>` : ""}</button>`).join("");
   const body = { overview: secOverview, itinerary: secItinerary, bookings: secBookings, documents: secDocuments,
-    costs: secCosts, essentials: secEssentials, updates: secUpdates }[S.section]();
+    costs: secCosts, essentials: secEssentials, updates: secUpdates, trips: secTrips }[S.section]();
   return header + `<div class="shell"><nav class="side noprint" aria-label="Trip sections">${nav}
     <div class="advisor-card"><p class="eyebrow">Your advisor</p><p class="name">${esc(ADVISOR.name)}</p>
       <p>WhatsApp when you're abroad. Call or text within the US.</p>
@@ -191,7 +206,7 @@ function secOverview() {
   const first = d.days.slice(0, 3);
   return `<section class="banner"><div style="flex:1 1 360px;display:flex;flex-direction:column;gap:14px">
       <p class="eyebrow">${esc(datesLine(t).toUpperCase())}</p><h1>${esc(t.title)}</h1><p>${esc(t.travelers)}</p></div>
-      <div style="display:flex;flex-direction:column;gap:18px;align-items:flex-end">${dd !== null && dd >= 0 ? `<div class="days"><b>${dd}</b><span>${dd === 1 ? "DAY" : "DAYS"} TO GO</span></div>` : ""}
+      <div style="display:flex;flex-direction:column;gap:18px;align-items:flex-end">${dd !== null && dd >= 0 ? `<div class="days"><b>${dd}</b><span>${dd === 1 ? "DAY" : "DAYS"} TO GO</span></div>` : isPast(t) ? `<div class="days"><span>A TRIP TO REMEMBER</span></div>` : ""}
       <button class="btn gold sm noprint" type="button" data-act="pdf">Download itinerary (PDF)</button></div></section>
     <div class="grid">
       <button class="card stat" type="button" data-act="go" data-v="bookings"><span class="k">Reservations</span><span class="n">${confirmed} of ${d.bookings.length}</span><span class="muted small">confirmed</span></button>
@@ -380,6 +395,7 @@ document.addEventListener("click", async (e) => {
   if (act === "forgot") { S.showForgot = !S.showForgot; return render(); }
   if (act === "signout" && S.preview) return previewBlock("Sign out");
   if (act === "signout") { await sb.auth.signOut(); S.profile = null; S.trips = []; S.d = null; return show("signin"); }
+  if (act === "pickTrip") { S.tripId = v; try { if (!S.preview) localStorage.setItem("mrf-trip", v); } catch {} S.section = "overview"; S.day = 0; await loadTrip(); render(); return window.scrollTo(0, 0); }
   if (act === "go") { S.section = v; render(); $("#main")?.focus?.(); return window.scrollTo(0, 0); }
   if (act === "day") { S.section = "itinerary"; S.day = Math.max(0, Math.min(Number(v), S.d.days.length - 1)); return render(); }
   if (act === "filter") { S.filter = v; return render(); }

@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171645";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171715";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -90,6 +90,8 @@ function readiness(t) {
   return Math.round((parts.reduce((a, x) => a + x, 0) / parts.length) * 100);
 }
 const activeTrips = () => S.D.trips.filter((t) => t.status !== "Complete");
+const allClients = () => S.D.profiles.filter((p) => p.role === "client").sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+const tripsOf = (userId) => S.D.members.filter((m) => m.user_id === userId).map((m) => T(m.trip_id)).filter(Boolean);
 
 // ---------------- render ----------------
 function render() {
@@ -177,7 +179,7 @@ function vTrip() {
   const d = daysUntil(t.start_date);
   const tabs = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab" role="tab" type="button" data-act="tab" data-v="${k}" aria-selected="${S.tab === k}">${l}</button>`).join("")}</div>`;
   const creds = S.creds ? `<div class="card" style="border-color:var(--gold);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
-      <div><span class="lbl">New temporary login for ${esc(S.creds.name)}</span><p style="font-size:16px">Username <b style="font-weight:500;color:var(--gold)">${esc(S.creds.username)}</b> · Password <b style="font-weight:500;color:var(--gold)">${esc(S.creds.password)}</b></p></div>
+      <div>${S.creds.returning ? `<span class="lbl">${esc(S.creds.name)} uses their existing login</span><p style="font-size:16px">Let them know their new trip is in the portal.</p>` : `<span class="lbl">New temporary login for ${esc(S.creds.name)}</span><p style="font-size:16px">Username <b style="font-weight:500;color:var(--gold)">${esc(S.creds.username)}</b> · Password <b style="font-weight:500;color:var(--gold)">${esc(S.creds.password)}</b></p>`}</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(S.creds, "copyCreds")}<button class="btn line sm" type="button" data-act="hideCreds">Done</button></div>
       ${S.creds.email ? "" : `<p class="muted small" style="flex-basis:100%">No email on file for ${esc(S.creds.name)}, so the draft opens without a recipient. Add it in the To line.</p>`}</div>` : "";
   const body = { itinerary: tItinerary, bookings: tBookings, documents: tDocuments, costs: tCosts, updates: tUpdates, checklist: tChecklist, tasks: tTasks, people: tPeople, details: tDetails }[S.tab](t);
@@ -292,12 +294,20 @@ const taskRow = (k) => `<label class="list-row" style="cursor:pointer;flex-wrap:
 
 function tPeople(t) {
   const people = clientsOf(t.id);
-  return panel(people.length ? people.map((p) => `<div class="list-row"><span style="flex:1 1 220px"><span style="display:block;font-weight:400">${esc(p.full_name)}</span>
-      <span class="muted small">Username: ${esc(p.username || "—")}${p.contact_email ? " · " + esc(p.contact_email) : ""}</span></span>
+  const others = allClients().filter((p) => !people.some((x) => x.id === p.id));
+  return panel(people.length ? people.map((p) => {
+      const also = tripsOf(p.id).filter((x) => x.id !== t.id);
+      return `<div class="list-row"><span style="flex:1 1 220px"><span style="display:block;font-weight:400">${esc(p.full_name)}</span>
+      <span class="muted small">Username: ${esc(p.username || "—")}${p.contact_email ? " · " + esc(p.contact_email) : ""}</span>
+      ${also.length ? `<span class="muted small" style="display:block">Also sees: ${also.map((x) => esc(x.title)).join(", ")}</span>` : ""}</span>
       <span class="badge ${p.must_set_login ? "wait" : "ok"}">${p.must_set_login ? "Hasn't signed in yet" : "Login active"}</span>
       <button class="btn line sm" type="button" data-act="resetLogin" data-v="${p.id}">Reset login</button>
-      <button class="del" type="button" data-act="removeClient" data-v="${p.id}">Remove login</button></div>`).join("") : `<p class="muted">No one has a login for this trip yet.</p>`,
-    `<form data-form="addTraveler"><h3 style="font-size:22px">Give someone a login</h3><p class="muted small">For a travel companion, or a client who needs a fresh account.</p>
+      ${also.length ? `<button class="del" type="button" data-act="unlinkClient" data-v="${p.id}">Remove from this trip</button>` : `<button class="del" type="button" data-act="removeClient" data-v="${p.id}">Remove login</button>`}</div>`;
+    }).join("") : `<p class="muted">No one has a login for this trip yet.</p>`,
+    `${others.length ? `<form data-form="linkClient" style="margin-bottom:22px"><h3 style="font-size:22px">Add a returning client</h3><p class="muted small">They keep their own login and see this trip next to their other trips.</p>
+      ${sel("user_id", "Client", others.map((p) => [p.id, `${p.full_name}${p.username ? " (" + p.username + ")" : ""}`]))}
+      <button class="btn sm" type="submit" style="margin-top:14px">Add to this trip</button></form>` : ""}
+    <form data-form="addTraveler"><h3 style="font-size:22px">Give someone a login</h3><p class="muted small">For a travel companion, or a client who needs a fresh account.</p>
       <div class="row2">${fld("first_name", "First name", "required")}${fld("last_name", "Last name", "required")}</div>${fld("contact_email", "Their email (for the welcome email)", "", "email")}
       <button class="btn sm" type="submit" style="margin-top:14px" ${S.busy ? "disabled" : ""}>Create temporary login</button></form>`);
 }
@@ -314,23 +324,38 @@ function vInvite() {
   const inv = S.invited;
   return h("Invite a client", "After the first consultation", "", "This creates the client's trip and a temporary login. Send them the login. On their first sign-in they choose their own username and password, and the temporary one stops working.") +
     `<div class="split"><form class="card a" data-form="invite" style="display:flex;flex-direction:column;gap:18px">
-      <div class="row2">${fld("first_name", "First name", "required")}${fld("last_name", "Last name", "required")}</div>
-      <div class="row2">${fld("contact_email", "Client's email (for the welcome email)", "", "email")}${fld("travelers", "Travelers (e.g. Elena &amp; Marco Reyes)")}</div>
+      <div class="field"><label for="who">Who is this trip for?</label><select id="who" class="input" data-change="inviteWho">
+        <option value="">A new client (creates their login)</option>
+        ${allClients().length ? `<optgroup label="Returning client (keeps their login)">${allClients().map((p) => `<option value="${p.id}" ${S.inviteWho === p.id ? "selected" : ""}>${esc(p.full_name)} · ${tripsOf(p.id).length} trip${tripsOf(p.id).length === 1 ? "" : "s"}</option>`).join("")}</optgroup>` : ""}</select></div>
+      ${S.inviteWho ? `${fld("travelers", "Travelers (e.g. Elena &amp; Marco Reyes)", `value="${esc(S.D.profiles.find((p) => p.id === S.inviteWho)?.full_name || "")}"`)}` : `<div class="row2">${fld("first_name", "First name", "required")}${fld("last_name", "Last name", "required")}</div>
+      <div class="row2">${fld("contact_email", "Client's email (for the welcome email)", "", "email")}${fld("travelers", "Travelers (e.g. Elena &amp; Marco Reyes)")}</div>`}
       ${fld("title", "Trip name", 'required placeholder="Lake Como &amp; the Amalfi Coast"')}
       <div class="row2">${fld("start_date", "Departs", "", "date")}${fld("end_date", "Returns", "", "date")}</div>
       <label class="check"><input type="checkbox" name="starter" checked> Add my standard checklist and to-dos</label>
       ${S.error ? `<p class="alert" role="alert">${esc(S.error)}</p>` : ""}
-      <button class="btn" type="submit" style="align-self:flex-start" ${S.busy ? "disabled" : ""}>${S.busy ? "Creating…" : "Create trip &amp; temporary login"}</button></form>
+      <button class="btn" type="submit" style="align-self:flex-start" ${S.busy ? "disabled" : ""}>${S.busy ? "Creating…" : S.inviteWho ? "Create trip in their portal" : "Create trip &amp; temporary login"}</button></form>
     <section class="card b" style="display:flex;flex-direction:column;gap:14px"><h3 style="font-size:24px">Their login</h3>
-      ${inv ? `<div><span class="lbl">Temporary username</span><p style="font-size:18px;color:var(--gold)">${esc(inv.username)}</p></div>
+      ${inv && inv.returning ? `<p>${esc(inv.name)} already has a login, so nothing new to send them, just a heads-up that their new trip is ready.</p>
+        <p style="padding:14px;background:var(--bg);font-size:14px;white-space:pre-line">${esc(inviteMessage(inv))}</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(inv, "copyInvite")}<button class="btn line sm" type="button" data-act="open" data-v="${inv.tripId}">Open their trip</button></div>`
+      : inv ? `<div><span class="lbl">Temporary username</span><p style="font-size:18px;color:var(--gold)">${esc(inv.username)}</p></div>
         <div><span class="lbl">Temporary password</span><p style="font-size:18px;color:var(--gold);letter-spacing:.06em">${esc(inv.password)}</p></div>
         <p style="padding:14px;background:var(--bg);font-size:14px;white-space:pre-line">${esc(inviteMessage(inv))}</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(inv, "copyInvite")}<button class="btn line sm" type="button" data-act="open" data-v="${inv.tripId}">Open their trip</button></div>
         <p class="muted small">"Open in my email app" opens a ready-to-send email in your computer\'s Mail app. Close it and choose Save to keep it in Drafts. This password is shown only now; if it's lost, use Reset login on their trip.</p>`
       : `<p class="muted">Fill in the form and the temporary login appears here, with a welcome message ready to paste into WhatsApp, a text or an email.</p>`}</section></div>`;
 }
-const inviteSubject = (c) => `Your MRF Travels client portal is ready`;
-const inviteMessage = (c, forEmail = false) => `Hi ${c.first},
+const inviteSubject = (c) => c.returning ? `Your next trip is in your MRF Travels portal` : `Your MRF Travels client portal is ready`;
+const returningMessage = (c, forEmail = false) => `Hi ${c.first},
+
+I'm so excited to be planning ${c.tripTitle ? c.tripTitle : "your next trip"} with you! It's now in your MRF Travels client portal, right alongside your other trips, and I'll keep it up to date as we go.
+
+Sign in at https://mrftravels.com/portal with the same username and password you already use. If you have more than one trip, you can switch between them at the top of the page, or under "Your trips".
+
+Forgot your login? Just text or WhatsApp me at (786) 287-2156 and I'll reset it for you.
+
+Warmly,${forEmail ? "\n" : "\nMya"}`;
+const inviteMessage = (c, forEmail = false) => c.returning ? returningMessage(c, forEmail) : `Hi ${c.first},
 
 I'm so excited to be planning ${c.tripTitle ? c.tripTitle : "your trip"} with you! Everything for your journey (your itinerary, confirmations, documents and updates) now lives in your private MRF Travels client portal, and I'll keep it up to date as we go.
 
@@ -405,9 +430,14 @@ document.addEventListener("click", async (e) => {
   }
   if (act === "removeClient") {
     const p = S.D.profiles.find((x) => x.id === v);
-    if (!(await askConfirm(`${p.full_name} won't be able to sign in anymore. Their trip and documents stay.`, { title: "Remove this login?", ok: "Remove login", danger: true }))) return;
+    if (!(await askConfirm(`${p.full_name} won't be able to sign in anymore. Their trips and documents stay.`, { title: "Remove this login?", ok: "Remove login", danger: true }))) return;
     try { await callAccounts({ action: "remove", user_id: v }); await loadAll(); render(); toast("Login removed."); } catch (err) { toast(err.message); }
     return;
+  }
+  if (act === "unlinkClient") {
+    const p = S.D.profiles.find((x) => x.id === v), t = T(S.tripId);
+    if (!(await askConfirm(`${p.full_name} won't see "${t.title}" anymore. They keep their login and their other trips.`, { title: "Remove from this trip?", ok: "Remove from trip", danger: true }))) return;
+    return run(sb.from("trip_members").delete().eq("trip_id", S.tripId).eq("user_id", v), "Removed from this trip.");
   }
   if (act === "deleteTrip") {
     const t = T(S.tripId);
@@ -421,6 +451,7 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("change", async (e) => {
   const el = e.target.closest("[data-change]"); if (!el) return;
   const kind = el.dataset.change, v = el.dataset.v;
+  if (kind === "inviteWho") { S.inviteWho = el.value; S.invited = null; S.error = ""; return render(); }
   if (kind === "status") return run(sb.from("trips").update({ status: el.value }).eq("id", S.tripId), "Status updated.");
   if (kind === "task") return run(sb.from("advisor_tasks").update({ done: el.checked }).eq("id", v));
   const files = Array.from(el.files || []); if (!files.length) return;
@@ -478,6 +509,13 @@ document.addEventListener("submit", async (e) => {
   if (form === "check") return run(sb.from("checklist_items").insert({ trip_id: t, title: val("title"), note: val("note"), sort: by(S.D.checklist, t).length }), "Added to their checklist.");
   if (form === "task") return run(sb.from("advisor_tasks").insert({ trip_id: val("trip_id") || (S.view === "trip" ? t : null), body: val("body") }), "To-do added.");
   if (form === "details") return run(sb.from("trips").update({ title: val("title"), travelers: val("travelers"), start_date: val("start_date") || null, end_date: val("end_date") || null }).eq("id", t), "Trip details saved.");
+  if (form === "linkClient") {
+    const uid = val("user_id"), p = S.D.profiles.find((x) => x.id === uid), tr = T(t);
+    if (!p) return;
+    const ok = await run(sb.from("trip_members").insert({ trip_id: t, user_id: uid }));
+    if (ok) { S.creds = { returning: true, name: p.full_name, first: (p.full_name || "").split(" ")[0], email: p.contact_email || "", tripTitle: tr?.title }; render(); toast(`${p.full_name} can see this trip now.`); }
+    return;
+  }
   if (form === "addTraveler") {
     S.busy = true; render();
     try {
@@ -485,6 +523,23 @@ document.addEventListener("submit", async (e) => {
       S.creds = { ...r, name: `${val("first_name")} ${val("last_name")}`, first: val("first_name"), email: val("contact_email"), tripTitle: T(t)?.title };
       S.busy = false; await loadAll(); render(); toast("Temporary login ready.");
     } catch (err) { S.busy = false; render(); toast(err.message); }
+    return;
+  }
+  if (form === "invite" && S.inviteWho) {
+    const p = S.D.profiles.find((x) => x.id === S.inviteWho), title = val("title");
+    if (!p || !title) return show("studio", "Choose the client and add a trip name.");
+    S.busy = true; S.error = ""; render();
+    const { data: trip, error } = await sb.from("trips").insert({ title, travelers: val("travelers") || p.full_name, start_date: val("start_date") || null, end_date: val("end_date") || null }).select().single();
+    if (error) { S.busy = false; return show("studio", "Couldn't create the trip: " + error.message); }
+    const { error: me } = await sb.from("trip_members").insert({ trip_id: trip.id, user_id: p.id });
+    if (me) { S.busy = false; await loadAll(); return show("studio", `The trip was created, but ${p.full_name} couldn't be added to it: ${me.message} Add them from the trip's "Travelers & logins" tab.`); }
+    if (f.starter.checked) {
+      await addStarterChecklist(trip.id);
+      await sb.from("advisor_tasks").insert(STARTER_TASKS.map((body) => ({ trip_id: trip.id, body })));
+    }
+    await sb.from("updates").insert({ trip_id: trip.id, kind: "update", body: "Your next adventure is here! I'll add your plans as we build this trip together." });
+    S.invited = { returning: true, name: p.full_name, first: (p.full_name || "").split(" ")[0], tripId: trip.id, email: p.contact_email || "", tripTitle: title };
+    S.inviteWho = ""; S.busy = false; await loadAll(); render(); toast(`Trip created. ${p.full_name} can see it now.`);
     return;
   }
   if (form === "invite") {
