@@ -533,10 +533,10 @@ const isDirty = () => JSON.stringify(C) !== BASE;
 
 /* ---------- views ---------- */
 function header(){
-  const r = route(), pages = [["home","Home","Our services"],["map","The map","Where I've sent clients"],["about","About","Meet Mya"],["inquire","Inquire","Plan a trip"],["contact","Contact","Call, email, DM"]];
+  const r = route(), pages = [["home","Home","Our services"],["map","The map","Where I've sent clients"],["about","About","Meet Mya"],["inquire","Inquire","Plan a trip"],["contact","Contact","Call, email, DM"],["/portal/","Client login","Your trip portal"]];
   return `<header><div class="wrap"><a class="logo" href="#home"><b>MRF</b><span>Travels</span></a>
   <div class="hdr-r"><a class="cta" href="#inquire">Inquire</a><button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="menu-list">Menu<span class="bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
-  <nav class="menu-list" id="menu-list" aria-label="Main" hidden>${pages.map(([k,t,s])=>`<a href="#${k}"${r===k?' aria-current="page"':''}>${t}<span>${s}</span></a>`).join("")}</nav></div></div></header>`;
+  <nav class="menu-list" id="menu-list" aria-label="Main" hidden>${pages.map(([k,t,s])=>`<a href="${k.startsWith("/")?k:"#"+k}"${r===k?' aria-current="page"':''}>${t}<span>${s}</span></a>`).join("")}</nav></div></div></header>`;
 }
 function contactCards(){
   const s = C.site, tel = "+1" + String(s.phone||"").replace(/\D/g,"").replace(/^1(?=\d{10}$)/,"");
