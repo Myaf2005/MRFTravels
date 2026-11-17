@@ -249,3 +249,9 @@ body.studio .toast{background:#D3B47E;color:#14110B}
 .pdoc .closing p{font-family:"Bodoni Moda",serif;font-style:italic;font-size:15pt;color:#0C343A}
 .pdoc .closing span{display:block;font-size:7.5pt;letter-spacing:.34em;color:#8A6A38;margin-top:3mm;text-transform:uppercase}
 @media print{.top,.side,.noprint{display:none !important}.shell{padding:0}}
+/* Mya's "view as client" preview bar */
+.preview-bar{background:#8A6A38;color:#FBF8F2;font-size:14px;position:sticky;top:0;z-index:40}
+.preview-bar .in{max-width:1200px;margin:0 auto;padding:10px 24px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+.preview-bar b{font-weight:500;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+.preview-bar select.input{width:auto;min-height:38px;font-size:14px;max-width:340px;background:#FBF8F2}
+.preview-bar .btn.gold{background:#0C343A;border-color:#0C343A;color:#FBF8F2}

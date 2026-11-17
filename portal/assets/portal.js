@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171700";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171645";
 
 const app = $("#app");
 const S = {
@@ -23,11 +23,47 @@ async function afterSignIn() {
   if (!user) return show("signin");
   const { data: profile } = await sb.from("profiles").select("*").eq("id", user.id).single();
   if (!profile) { await sb.auth.signOut(); return show("signin", "This login isn't set up yet. Please contact Mya."); }
-  if (profile.role === "advisor") { location.href = "studio/"; return; }
+  if (profile.role === "advisor") {
+    const pid = new URLSearchParams(location.search).get("preview");
+    if (!pid) { location.href = "studio/"; return; }
+    return startPreview(profile, pid);
+  }
   S.profile = profile;
   if (profile.must_set_login) return show("setup");
   await loadTrips();
   show("portal");
+}
+
+// Mya previewing a client's portal from the Studio: same screens, but nothing is saved.
+async function startPreview(advisor, tripId) {
+  const { data: all } = await sb.from("trips").select("*").order("start_date", { ascending: true });
+  if (!(all || []).some((t) => t.id === tripId)) { location.href = "studio/"; return; }
+  const { data: members } = await sb.from("trip_members").select("*");
+  const { data: profiles } = await sb.from("profiles").select("id,full_name,role");
+  const clientIds = (members || []).filter((m) => m.trip_id === tripId).map((m) => m.user_id);
+  const clients = (profiles || []).filter((p) => clientIds.includes(p.id));
+  const first = clients[0];
+  const trip = all.find((t) => t.id === tripId);
+  S.preview = {
+    advisor, clients,
+    all: all.map((t) => ({ id: t.id, label: (t.travelers || (members || []).filter((m) => m.trip_id === t.id).map((m) => (profiles || []).find((p) => p.id === m.user_id)?.full_name).filter(Boolean).join(" & ") || t.title) + " · " + t.title })),
+  };
+  // what this client would see: the trips they belong to (or just this one if no login yet)
+  S.profile = first ? { ...first } : { id: null, full_name: trip.travelers || "Your client" };
+  S.trips = first ? all.filter((t) => (members || []).some((m) => m.user_id === first.id && m.trip_id === t.id)) : [trip];
+  S.tripId = tripId; S.section = "overview";
+  await loadTrip();
+  show("portal");
+}
+const previewBlock = (what) => { toast(`Preview: ${what} only works for the client. Nothing was changed.`); };
+function previewBar() {
+  if (!S.preview) return "";
+  const names = S.preview.clients.map((c) => c.full_name).join(" & ") || "this trip (no client login yet)";
+  return `<div class="preview-bar noprint" role="region" aria-label="Preview"><div class="in">
+    <span><b>Preview</b> · Viewing as ${esc(names)}. Nothing you click here changes their trip.</span>
+    <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label class="sr" for="pv-pick">Switch client</label>
+    <select id="pv-pick" class="input" data-change="previewSwitch">${S.preview.all.map((t) => `<option value="${t.id}" ${t.id === S.tripId ? "selected" : ""}>${esc(t.label)}</option>`).join("")}</select>
+    <a class="btn gold sm" href="studio/">Back to Studio</a></span></div></div>`;
 }
 
 async function loadTrips() {
@@ -47,7 +83,9 @@ async function loadTrip() {
     sb.from("updates").select("*").eq("trip_id", id).order("created_at", { ascending: false }), q("checklist_items"),
   ]);
   const updIds = (updates.data || []).map((u) => u.id);
-  const reads = updIds.length ? await sb.from("update_reads").select("update_id").in("update_id", updIds) : { data: [] };
+  let rq = sb.from("update_reads").select("update_id").in("update_id", updIds);
+  if (S.preview) rq = rq.eq("user_id", S.profile.id || "00000000-0000-0000-0000-000000000000");
+  const reads = updIds.length ? await rq : { data: [] };
   const daysSorted = (days.data || []).sort((a, b) => (a.day_date || "").localeCompare(b.day_date || "") || a.sort - b.sort);
   S.d = {
     days: daysSorted.map((d) => ({ ...d, items: (items.data || []).filter((i) => i.day_id === d.id).sort((a, b) => a.sort - b.sort) })),
@@ -115,7 +153,7 @@ const SECTIONS = [["overview", "Overview"], ["itinerary", "Itinerary"], ["bookin
 function viewPortal() {
   const t = trip();
   const unread = S.d ? S.d.updates.filter((u) => !S.d.read.has(u.id)).length : 0;
-  const header = `<header class="top"><div class="in">${BRAND}<div class="r">
+  const header = previewBar() + `<header class="top"><div class="in">${BRAND}<div class="r">
     ${S.trips.length > 1 ? `<label class="sr" for="trip-pick">Choose a trip</label><select id="trip-pick" class="input" style="width:auto;min-height:44px;font-size:15px" data-change="trip">${S.trips.map((x) => `<option value="${x.id}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.title)}</option>`).join("")}</select>` : ""}
     ${t ? `<button class="icon-btn" type="button" data-act="go" data-v="updates" aria-label="Updates${unread ? `, ${unread} unread` : ""}"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${unread ? `<span class="count">${unread}</span>` : ""}</button>` : ""}
     <span class="avatar" aria-hidden="true">${esc(initials(S.profile.full_name))}</span><span>${esc(S.profile.full_name)}</span>
@@ -331,6 +369,7 @@ async function markRead(ids) {
   const fresh = ids.filter((id) => !S.d.read.has(id));
   if (!fresh.length) return;
   fresh.forEach((id) => S.d.read.add(id));
+  if (S.preview) return; // only marked read on Mya's screen, not saved
   await sb.from("update_reads").upsert(fresh.map((update_id) => ({ update_id, user_id: S.profile.id })), { onConflict: "update_id,user_id", ignoreDuplicates: true });
 }
 
@@ -339,6 +378,7 @@ document.addEventListener("click", async (e) => {
   if (!el) return;
   const v = el.dataset.v, act = el.dataset.act;
   if (act === "forgot") { S.showForgot = !S.showForgot; return render(); }
+  if (act === "signout" && S.preview) return previewBlock("Sign out");
   if (act === "signout") { await sb.auth.signOut(); S.profile = null; S.trips = []; S.d = null; return show("signin"); }
   if (act === "go") { S.section = v; render(); $("#main")?.focus?.(); return window.scrollTo(0, 0); }
   if (act === "day") { S.section = "itinerary"; S.day = Math.max(0, Math.min(Number(v), S.d.days.length - 1)); return render(); }
@@ -363,6 +403,7 @@ document.addEventListener("click", async (e) => {
 
 async function removeMine(id) {
   const d = doc(id); if (!d) return;
+  if (S.preview) return previewBlock("Removing a file");
   if (!(await askConfirm(`"${d.title}" will be removed from your documents.`, { title: "Remove this file?", ok: "Remove", danger: true }))) return;
   const { error: se } = await sb.storage.from(BUCKET).remove([d.storage_path]);
   const { error } = await sb.from("documents").delete().eq("id", id);
@@ -375,15 +416,18 @@ document.addEventListener("change", async (e) => {
   const el = e.target.closest("[data-change]");
   if (!el) return;
   const kind = el.dataset.change;
+  if (kind === "previewSwitch") { location.href = "?preview=" + encodeURIComponent(el.value); return; }
   if (kind === "trip") { S.tripId = el.value; try { localStorage.setItem("mrf-trip", el.value); } catch {} S.section = "overview"; S.day = 0; await loadTrip(); return render(); }
   if (kind === "check") {
     const item = S.d.checklist.find((x) => x.id === el.dataset.v); const val = el.checked;
+    if (S.preview) { el.checked = !val; return previewBlock("Ticking the checklist"); }
     const { error } = await sb.from("checklist_items").update({ done: val }).eq("id", item.id);
     if (error) { el.checked = !val; return toast("That didn't save. Please try again."); }
     item.done = val; return render();
   }
   if (kind === "upload") {
     const files = Array.from(el.files || []); if (!files.length) return;
+    if (S.preview) { el.value = ""; return previewBlock("Uploading to Your documents"); }
     const tooBig = files.find((f) => f.size > 20 * 1024 * 1024);
     if (tooBig) { el.value = ""; return toast(`${tooBig.name} is over 20 MB.`); }
     S.busy = true; render();
