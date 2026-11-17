@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171251";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171255";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -326,10 +326,9 @@ function vInvite() {
         <div><span class="lbl">Temporary password</span><p style="font-size:18px;color:var(--gold);letter-spacing:.06em">${esc(inv.password)}</p></div>
         <p style="padding:14px;background:var(--bg);font-size:14px;white-space:pre-line">${esc(inviteMessage(inv))}</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(inv, "copyInvite")}<button class="btn line sm" type="button" data-act="open" data-v="${inv.tripId}">Open their trip</button></div>
-        <p class="muted small">"Create email draft" opens a ready-to-send email in your Gmail and saves it to Drafts. This password is shown only now; if it's lost, use Reset login on their trip.</p>`
+        <p class="muted small">"Open in my email app" opens a ready-to-send email in your computer\'s Mail app. Close it and choose Save to keep it in Drafts. This password is shown only now; if it's lost, use Reset login on their trip.</p>`
       : `<p class="muted">Fill in the form and the temporary login appears here, with a welcome message ready to paste into WhatsApp, a text or an email.</p>`}</section></div>`;
 }
-const ADVISOR_EMAIL = "mya.ferrera@mrftravels.com";
 const inviteSubject = (c) => `Your MRF Travels client portal is ready`;
 const inviteMessage = (c, forEmail = false) => `Hi ${c.first},
 
@@ -348,9 +347,9 @@ Once you're in, take a look at "Before you go" for your checklist, and upload a 
 If you have any trouble signing in, just text or WhatsApp me at (786) 287-2156.
 
 Warmly,${forEmail ? "\n" : "\nMya"}`; // in Gmail, Mya's saved signature is added below
-const gmailDraftUrl = (c) => `https://mail.google.com/mail/u/${encodeURIComponent(ADVISOR_EMAIL)}/?view=cm&fs=1&tf=1` +
-  `&to=${encodeURIComponent(c.email || "")}&su=${encodeURIComponent(inviteSubject(c))}&body=${encodeURIComponent(inviteMessage(c, true))}`;
-const draftButtons = (c, copyAct) => `<a class="btn sm" href="${esc(gmailDraftUrl(c))}" target="_blank" rel="noopener">Create email draft</a>
+// Opens a new message in the computer's own email app (Apple Mail, Outlook…), ready to send or save as a draft.
+const mailtoUrl = (c) => `mailto:${(c.email || "").replace(/[^\w.+@-]/g, "")}?subject=${encodeURIComponent(inviteSubject(c))}&body=${encodeURIComponent(inviteMessage(c, true).replace(/\n/g, "\r\n"))}`;
+const draftButtons = (c, copyAct) => `<a class="btn sm" href="${esc(mailtoUrl(c))}">Open in my email app</a>
   <button class="btn line sm" type="button" data-act="${copyAct}">Copy message</button>`;
 
 function vTodo() {
