@@ -19,6 +19,7 @@ gtag('config', 'G-HWC9ZEL05X', {send_page_view: false});
 function trackPage(){
   var h = location.hash.slice(1), names = {map:'The map', about:'About', inquire:'Inquire', contact:'Contact'};
   var path = names[h] ? '/' + h : h.indexOf('post-') === 0 ? '/' + h : '/';
+  if(path === trackPage.last) return; trackPage.last = path;
   gtag('event', 'page_view', {page_title: (names[h] || 'Home') + ' | MRF Travels', page_location: location.origin + path + location.search, page_path: path});
 }
 trackPage();
