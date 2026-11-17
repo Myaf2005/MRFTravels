@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
-import { sb, $, esc, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js";
+import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171251";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -385,9 +385,9 @@ document.addEventListener("click", async (e) => {
   if (act === "open") { S.view = "trip"; S.tripId = v; S.tab = el.dataset.tab || "itinerary"; S.creds = null; render(); return scrollTo(0, 0); }
   if (act === "tab") { S.tab = v; return render(); }
   if (act === "doc") { const d = S.D.docs.find((x) => x.id === v); if (d) openDocument(d); return; }
-  if (act === "del") { if (!confirm("Remove this? It can't be undone.")) return; return run(sb.from(el.dataset.t).delete().eq("id", v), "Removed."); }
+  if (act === "del") { if (!(await askConfirm("This can't be undone.", { title: "Remove this?", ok: "Remove", danger: true }))) return; return run(sb.from(el.dataset.t).delete().eq("id", v), "Removed."); }
   if (act === "delDoc") {
-    const d = S.D.docs.find((x) => x.id === v); if (!d || !confirm(`Remove "${d.title}"? The client won't see it anymore.`)) return;
+    const d = S.D.docs.find((x) => x.id === v); if (!d || !(await askConfirm(`"${d.title}" will be deleted and the client won't see it anymore.`, { title: "Remove this document?", ok: "Remove", danger: true }))) return;
     await sb.storage.from(BUCKET).remove([d.storage_path]); return run(sb.from("documents").delete().eq("id", v), "Document removed.");
   }
   if (act === "toggleBooking") { const b = S.D.bookings.find((x) => x.id === v); return run(sb.from("bookings").update({ status: b.status === "Confirmed" ? "Pending" : "Confirmed" }).eq("id", v)); }
@@ -398,20 +398,20 @@ document.addEventListener("click", async (e) => {
   if (act === "copyInvite") return copy(inviteMessage(S.invited), "Welcome message copied.");
   if (act === "resetLogin") {
     const p = S.D.profiles.find((x) => x.id === v);
-    if (!confirm(`Give ${p.full_name} a new temporary login? Their current password stops working.`)) return;
+    if (!(await askConfirm(`${p.full_name} gets a new temporary username and password. Their current password stops working right away.`, { title: "Reset this login?", ok: "Reset login" }))) return;
     try { const r = await callAccounts({ action: "reset", user_id: v }); S.creds = { ...r, name: p.full_name, first: p.full_name.split(" ")[0], email: p.contact_email || "", tripTitle: T(S.tripId)?.title }; await loadAll(); render(); toast("New temporary login ready."); }
     catch (err) { toast(err.message); }
     return;
   }
   if (act === "removeClient") {
     const p = S.D.profiles.find((x) => x.id === v);
-    if (!confirm(`Remove ${p.full_name}'s login? They won't be able to sign in. Their trip stays.`)) return;
+    if (!(await askConfirm(`${p.full_name} won't be able to sign in anymore. Their trip and documents stay.`, { title: "Remove this login?", ok: "Remove login", danger: true }))) return;
     try { await callAccounts({ action: "remove", user_id: v }); await loadAll(); render(); toast("Login removed."); } catch (err) { toast(err.message); }
     return;
   }
   if (act === "deleteTrip") {
     const t = T(S.tripId);
-    if (prompt(`This deletes "${t.title}" with its itinerary, reservations, documents and payments. Client logins stay. Type DELETE to confirm.`) !== "DELETE") return;
+    if (!(await askConfirm(`This permanently deletes "${t.title}" with its itinerary, reservations, documents and payments. Client logins stay.`, { title: "Delete this trip?", ok: "Delete trip", danger: true, typeToConfirm: "DELETE" }))) return;
     const paths = by(S.D.docs, t.id).map((d) => d.storage_path);
     if (paths.length) await sb.storage.from(BUCKET).remove(paths);
     S.view = "trips"; return run(sb.from("trips").delete().eq("id", t.id), "Trip deleted.");

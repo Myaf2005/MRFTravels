@@ -97,3 +97,36 @@ export async function uploadFile(tripId, category, file) {
 }
 
 export const KIND_TAG = { flight: "FLT", hotel: "HTL", transfer: "CAR", experience: "EXP", other: "RES" };
+
+// ---------- in-page confirmation (browser pop-ups can be blocked, so we never rely on them) ----------
+// askConfirm("Remove this?", { ok: "Remove", danger: true, typeToConfirm: "DELETE" }) → Promise<boolean>
+export function askConfirm(message, { title = "Are you sure?", ok = "Yes, continue", cancel = "Cancel", danger = false, typeToConfirm = "" } = {}) {
+  return new Promise((resolve) => {
+    const prev = document.activeElement;
+    const wrap = document.createElement("div");
+    wrap.className = "overlay";
+    wrap.innerHTML = `<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="cf-t" aria-describedby="cf-m" style="max-width:480px">
+      <div style="padding:28px 28px 8px;display:flex;flex-direction:column;gap:12px">
+        <h2 id="cf-t" style="font-size:28px">${esc(title)}</h2>
+        <p id="cf-m" class="muted">${esc(message)}</p>
+        ${typeToConfirm ? `<div class="field"><label for="cf-in">Type ${esc(typeToConfirm)} to confirm</label><input class="input" id="cf-in" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>` : ""}
+      </div>
+      <div class="df" style="border-top:0"><button class="btn line sm" type="button" data-cf="no">${esc(cancel)}</button>
+        <button class="btn sm" type="button" data-cf="yes" ${typeToConfirm ? "disabled" : ""} ${danger ? 'style="background:#8A2E22;border-color:#8A2E22;color:#fff"' : ""}>${esc(ok)}</button></div></div>`;
+    const yes = wrap.querySelector('[data-cf="yes"]'), input = wrap.querySelector("#cf-in");
+    const done = (v) => { wrap.remove(); document.removeEventListener("keydown", onKey, true); prev?.focus?.(); resolve(v); };
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); done(false); }
+      if (e.key === "Enter" && !yes.disabled && document.activeElement !== wrap.querySelector('[data-cf="no"]')) { e.preventDefault(); done(true); }
+      if (e.key === "Tab") { // keep focus inside the box
+        const f = [...wrap.querySelectorAll("button:not([disabled]), input")]; const i = f.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+      }
+    };
+    wrap.addEventListener("click", (e) => { if (e.target === wrap || e.target.closest('[data-cf="no"]')) done(false); else if (e.target.closest('[data-cf="yes"]') && !yes.disabled) done(true); });
+    input?.addEventListener("input", () => { yes.disabled = input.value.trim().toUpperCase() !== typeToConfirm.toUpperCase(); });
+    document.addEventListener("keydown", onKey, true);
+    document.body.appendChild(wrap);
+    (input || wrap.querySelector('[data-cf="no"]')).focus();
+  });
+}

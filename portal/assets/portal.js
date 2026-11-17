@@ -1,6 +1,6 @@
 // MRF Travels — client portal
-import { sb, $, esc, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate } from "./lib.js";
+import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate } from "./lib.js?v=202611171251";
 
 const app = $("#app");
 const S = {
@@ -311,7 +311,7 @@ document.addEventListener("click", async (e) => {
 
 async function removeMine(id) {
   const d = doc(id); if (!d) return;
-  if (!confirm(`Remove "${d.title}" from your documents?`)) return;
+  if (!(await askConfirm(`"${d.title}" will be removed from your documents.`, { title: "Remove this file?", ok: "Remove", danger: true }))) return;
   const { error: se } = await sb.storage.from(BUCKET).remove([d.storage_path]);
   const { error } = await sb.from("documents").delete().eq("id", id);
   if (error || se) return toast("That file couldn't be removed. Please try again.");
