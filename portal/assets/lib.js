@@ -130,3 +130,29 @@ export function askConfirm(message, { title = "Are you sure?", ok = "Yes, contin
     (input || wrap.querySelector('[data-cf="no"]')).focus();
   });
 }
+
+// ---------- MRF photo set: rotates on the client sign-in and on itinerary PDF covers ----------
+// Our own yacht photo plus Unsplash photos (free under the Unsplash License). Framing keeps the
+// subject clear of the headline on the left.
+const UNSPLASH = (id, w = 1400, h = 2000) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&h=${h}&q=80`;
+export const PHOTOS = [
+  { name: "Yacht on deep teal", url: new URL("sign-in.jpg", import.meta.url).href, size: "cover", pos: "center" },
+  { name: "Overwater villas at dusk", url: UNSPLASH("photo-1620483829646-8fb1d8162108"), size: "115% auto", pos: "85% 38%" },
+  { name: "Island at night", url: UNSPLASH("photo-1759862577214-447b51f1452d"), size: "cover", pos: "center" },
+  { name: "Island villa on the reef", url: UNSPLASH("photo-1539223583194-b66100fa7273", 1800, 2600), size: "185% auto", pos: "0% 42%" },
+  { name: "Yacht from above", url: UNSPLASH("photo-1528154291023-a6525fabe5b4", 1800, 2600), size: "170% auto", pos: "0% 50%" },
+  { name: "Sandbar and dark sea", url: UNSPLASH("photo-1759861680699-1077ce446d06"), size: "cover", pos: "center" },
+];
+export const photoStyle = (ph) => `background-image:url('${ph.url}');background-size:${ph.size};background-position:${ph.pos};background-repeat:no-repeat`;
+// Each photo shows for 7 seconds and crossfades into the next.
+export function slidesHtml() {
+  const n = PHOTOS.length, per = 7, total = n * per, fade = (1.4 / total) * 100, show = (per / total) * 100;
+  const css = `@keyframes mrfSlide{0%{opacity:0}${fade.toFixed(2)}%{opacity:1}${show.toFixed(2)}%{opacity:1}${(show + fade).toFixed(2)}%{opacity:0}100%{opacity:0}}
+    @keyframes mrfSlideFirst{0%{opacity:1}${show.toFixed(2)}%{opacity:1}${(show + fade).toFixed(2)}%{opacity:0}${(100 - fade).toFixed(2)}%{opacity:0}100%{opacity:1}}`;
+  return `<style>${css}</style><div class="slides" aria-hidden="true">${PHOTOS.map((ph, i) =>
+    `<i style="${photoStyle(ph)};animation:${i === 0 ? "mrfSlideFirst" : "mrfSlide"} ${total}s ${i * per}s infinite${i === 0 ? ";opacity:1" : ""}"></i>`).join("")}</div>`;
+}
+export function nextCoverPhoto() {
+  let i = 0; try { i = (Number(localStorage.getItem("mrf-cover")) || 0) % PHOTOS.length; localStorage.setItem("mrf-cover", String(i + 1)); } catch {}
+  return PHOTOS[i];
+}

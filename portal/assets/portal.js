@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate } from "./lib.js?v=202611171603";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171606";
 
 const app = $("#app");
 const S = {
@@ -72,7 +72,7 @@ function render() {
 
 function viewSignIn() {
   return `<div class="signin">
-  <div class="hero"><div class="slides" aria-hidden="true"><i></i><i></i><i></i><i></i></div>${BRAND}
+  <div class="hero">${slidesHtml()}${BRAND}
     <div class="copy"><p class="eyebrow">Client portal</p>
       <h1>Everything for your journey, <em>in one place.</em></h1>
       <p>Your itinerary, confirmations and documents, curated and kept up to date by your advisor.</p></div>
@@ -276,13 +276,13 @@ function secUpdates() {
 }
 
 // ---------------- MRF itinerary keepsake (PDF via the browser's Save as PDF) ----------------
-function itineraryDoc() {
+function itineraryDoc(coverPhoto) {
   const t = trip(), d = S.d;
   const nights = t.start_date && t.end_date ? Math.round((toDate(t.end_date) - toDate(t.start_date)) / 86400000) : null;
   const longDate = (iso) => (iso ? toDate(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "");
   const confirmed = d.bookings.filter((b) => b.status === "Confirmed").length;
   const places = [...new Set(d.days.map((x) => x.place).filter(Boolean).flatMap((p) => p.split(/\s*→\s*/)))].slice(0, 6);
-  const cover = `<section class="pg"><div class="cover">
+  const cover = `<section class="pg"><div class="cover" style="${photoStyle(coverPhoto)}">
       <div class="brand"><b>MRF</b><span>TRAVELS</span></div>
       <div class="mid"><p class="kicker">Your private itinerary</p><h1>${esc(t.title)}</h1><div class="rule"></div>
         <p class="who">Prepared for ${esc(t.travelers || S.profile.full_name)}</p>
@@ -315,13 +315,14 @@ function itineraryDoc() {
 async function makePdf() {
   let root = document.getElementById("print-root");
   if (!root) { root = document.createElement("div"); root.id = "print-root"; document.body.appendChild(root); }
-  root.innerHTML = itineraryDoc();
+  const cover = nextCoverPhoto();
+  root.innerHTML = itineraryDoc(cover);
   const t = trip(); const oldTitle = document.title;
   document.title = `MRF Travels Itinerary - ${t.title}`; // becomes the PDF's file name
   toast("Choose “Save as PDF” as the destination to download your itinerary.");
   try { await document.fonts?.ready; } catch {}
-  const img = new Image(); img.src = new URL("sign-in.jpg", import.meta.url).href;
-  await Promise.race([img.decode().catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
+  const img = new Image(); img.src = cover.url;
+  await Promise.race([img.decode().catch(() => {}), new Promise((r) => setTimeout(r, 4000))]);
   setTimeout(() => { window.print(); setTimeout(() => { document.title = oldTitle; }, 500); }, 150);
 }
 
