@@ -331,7 +331,7 @@ function vInvite() {
 }
 const ADVISOR_EMAIL = "mya.ferrera@mrftravels.com";
 const inviteSubject = (c) => `Your MRF Travels client portal is ready`;
-const inviteMessage = (c) => `Hi ${c.first},
+const inviteMessage = (c, forEmail = false) => `Hi ${c.first},
 
 I'm so excited to be planning ${c.tripTitle ? c.tripTitle : "your trip"} with you! Everything for your journey (your itinerary, confirmations, documents and updates) now lives in your private MRF Travels client portal, and I'll keep it up to date as we go.
 
@@ -347,13 +347,9 @@ Once you're in, take a look at "Before you go" for your checklist, and upload a 
 
 If you have any trouble signing in, just text or WhatsApp me at (786) 287-2156.
 
-Warmly,
-Mya Ferrera
-Luxury Travel Advisor | MRF Travels
-Bespoke luxury travel
-mrftravels.com | Instagram @mrf.travels`;
+Warmly,${forEmail ? "\n" : "\nMya"}`; // in Gmail, Mya's saved signature is added below
 const gmailDraftUrl = (c) => `https://mail.google.com/mail/u/${encodeURIComponent(ADVISOR_EMAIL)}/?view=cm&fs=1&tf=1` +
-  `&to=${encodeURIComponent(c.email || "")}&su=${encodeURIComponent(inviteSubject(c))}&body=${encodeURIComponent(inviteMessage(c))}`;
+  `&to=${encodeURIComponent(c.email || "")}&su=${encodeURIComponent(inviteSubject(c))}&body=${encodeURIComponent(inviteMessage(c, true))}`;
 const draftButtons = (c, copyAct) => `<a class="btn sm" href="${esc(gmailDraftUrl(c))}" target="_blank" rel="noopener">Create email draft</a>
   <button class="btn line sm" type="button" data-act="${copyAct}">Copy message</button>`;
 
