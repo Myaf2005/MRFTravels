@@ -52,7 +52,7 @@ async function loadAll() {
 const by = (arr, tripId) => arr.filter((x) => x.trip_id === tripId);
 const T = (id) => S.D.trips.find((t) => t.id === id);
 const clientsOf = (tripId) => S.D.members.filter((m) => m.trip_id === tripId).map((m) => S.D.profiles.find((p) => p.id === m.user_id)).filter(Boolean);
-const tripLabel = (t) => clientsOf(t.id).map((p) => p.full_name).join(" & ") || t.travelers || "No client yet";
+const tripLabel = (t) => t.travelers || clientsOf(t.id).map((p) => p.full_name).join(" & ") || "No client yet";
 
 async function run(promise, okMsg) {
   const { error } = await promise;
