@@ -178,7 +178,8 @@ function vTrip() {
   const tabs = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab" role="tab" type="button" data-act="tab" data-v="${k}" aria-selected="${S.tab === k}">${l}</button>`).join("")}</div>`;
   const creds = S.creds ? `<div class="card" style="border-color:var(--gold);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
       <div><span class="lbl">New temporary login for ${esc(S.creds.name)}</span><p style="font-size:16px">Username <b style="font-weight:500;color:var(--gold)">${esc(S.creds.username)}</b> · Password <b style="font-weight:500;color:var(--gold)">${esc(S.creds.password)}</b></p></div>
-      <div style="display:flex;gap:10px"><button class="btn sm" type="button" data-act="copyCreds">Copy message</button><button class="btn line sm" type="button" data-act="hideCreds">Done</button></div></div>` : "";
+      <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(S.creds, "copyCreds")}<button class="btn line sm" type="button" data-act="hideCreds">Done</button></div>
+      ${S.creds.email ? "" : `<p class="muted small" style="flex-basis:100%">No email on file for ${esc(S.creds.name)}, so the draft opens without a recipient. Add it in the To line.</p>`}</div>` : "";
   const body = { itinerary: tItinerary, bookings: tBookings, documents: tDocuments, costs: tCosts, updates: tUpdates, checklist: tChecklist, tasks: tTasks, people: tPeople, details: tDetails }[S.tab](t);
   return `<button class="btn line sm" type="button" data-act="view" data-v="trips" style="align-self:flex-start">← All trips</button>
     <div class="head"><div class="t"><p class="eyebrow">${esc(dates(t).toUpperCase())}${d !== null && d >= 0 ? ` · ${d} DAYS OUT` : ""}</p><h1>${esc(t.title)}</h1><p class="muted">${esc(tripLabel(t))}</p></div>
@@ -297,7 +298,7 @@ function tPeople(t) {
       <button class="btn line sm" type="button" data-act="resetLogin" data-v="${p.id}">Reset login</button>
       <button class="del" type="button" data-act="removeClient" data-v="${p.id}">Remove login</button></div>`).join("") : `<p class="muted">No one has a login for this trip yet.</p>`,
     `<form data-form="addTraveler"><h3 style="font-size:22px">Give someone a login</h3><p class="muted small">For a travel companion, or a client who needs a fresh account.</p>
-      <div class="row2">${fld("first_name", "First name", "required")}${fld("last_name", "Last name", "required")}</div>${fld("contact_email", "Their email (optional, for your records)", "", "email")}
+      <div class="row2">${fld("first_name", "First name", "required")}${fld("last_name", "Last name", "required")}</div>${fld("contact_email", "Their email (for the welcome email)", "", "email")}
       <button class="btn sm" type="submit" style="margin-top:14px" ${S.busy ? "disabled" : ""}>Create temporary login</button></form>`);
 }
 
@@ -314,7 +315,7 @@ function vInvite() {
   return h("Invite a client", "After the first consultation", "", "This creates the client's trip and a temporary login. Send them the login. On their first sign-in they choose their own username and password, and the temporary one stops working.") +
     `<div class="split"><form class="card a" data-form="invite" style="display:flex;flex-direction:column;gap:18px">
       <div class="row2">${fld("first_name", "First name", "required")}${fld("last_name", "Last name", "required")}</div>
-      <div class="row2">${fld("contact_email", "Email (for your records)", "", "email")}${fld("travelers", "Travelers (e.g. Elena &amp; Marco Reyes)")}</div>
+      <div class="row2">${fld("contact_email", "Client's email (for the welcome email)", "", "email")}${fld("travelers", "Travelers (e.g. Elena &amp; Marco Reyes)")}</div>
       ${fld("title", "Trip name", 'required placeholder="Lake Como &amp; the Amalfi Coast"')}
       <div class="row2">${fld("start_date", "Departs", "", "date")}${fld("end_date", "Returns", "", "date")}</div>
       <label class="check"><input type="checkbox" name="starter" checked> Add my standard checklist and to-dos</label>
@@ -324,11 +325,37 @@ function vInvite() {
       ${inv ? `<div><span class="lbl">Temporary username</span><p style="font-size:18px;color:var(--gold)">${esc(inv.username)}</p></div>
         <div><span class="lbl">Temporary password</span><p style="font-size:18px;color:var(--gold);letter-spacing:.06em">${esc(inv.password)}</p></div>
         <p style="padding:14px;background:var(--bg);font-size:14px;white-space:pre-line">${esc(inviteMessage(inv))}</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn sm" type="button" data-act="copyInvite">Copy message</button><button class="btn line sm" type="button" data-act="open" data-v="${inv.tripId}">Open their trip</button></div>
-        <p class="muted small">This password is shown only now. If it's lost, use Reset login on their trip.</p>`
+        <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(inv, "copyInvite")}<button class="btn line sm" type="button" data-act="open" data-v="${inv.tripId}">Open their trip</button></div>
+        <p class="muted small">"Create email draft" opens a ready-to-send email in your Gmail and saves it to Drafts. This password is shown only now; if it's lost, use Reset login on their trip.</p>`
       : `<p class="muted">Fill in the form and the temporary login appears here, with a welcome message ready to paste into WhatsApp, a text or an email.</p>`}</section></div>`;
 }
-const inviteMessage = (c) => `Hi ${c.first}! Your MRF Travels client portal is ready.\n\nGo to mrftravels.com/portal\nUsername: ${c.username}\nTemporary password: ${c.password}\n\nThe first time you sign in, you'll choose your own username and password.\n\nMya`;
+const ADVISOR_EMAIL = "mya.ferrera@mrftravels.com";
+const inviteSubject = (c) => `Your MRF Travels client portal is ready`;
+const inviteMessage = (c) => `Hi ${c.first},
+
+I'm so excited to be planning ${c.tripTitle ? c.tripTitle : "your trip"} with you! Everything for your journey (your itinerary, confirmations, documents and updates) now lives in your private MRF Travels client portal, and I'll keep it up to date as we go.
+
+Here's how to get in:
+
+1. Go to mrftravels.com and choose "Client login" from the menu, or go straight to https://mrftravels.com/portal
+2. Sign in with your temporary login:
+   Username: ${c.username}
+   Temporary password: ${c.password}
+3. You'll be asked to choose your own username and password. Pick something only you know. The temporary one stops working as soon as you save.
+
+Once you're in, take a look at "Before you go" for your checklist, and upload a copy of your passport under Documents, then Your documents.
+
+If you have any trouble signing in, just text or WhatsApp me at (786) 287-2156.
+
+Warmly,
+Mya Ferrera
+Luxury Travel Advisor | MRF Travels
+Bespoke luxury travel
+mrftravels.com | Instagram @mrf.travels`;
+const gmailDraftUrl = (c) => `https://mail.google.com/mail/u/${encodeURIComponent(ADVISOR_EMAIL)}/?view=cm&fs=1&tf=1` +
+  `&to=${encodeURIComponent(c.email || "")}&su=${encodeURIComponent(inviteSubject(c))}&body=${encodeURIComponent(inviteMessage(c))}`;
+const draftButtons = (c, copyAct) => `<a class="btn sm" href="${esc(gmailDraftUrl(c))}" target="_blank" rel="noopener">Create email draft</a>
+  <button class="btn line sm" type="button" data-act="${copyAct}">Copy message</button>`;
 
 function vTodo() {
   const ks = [...S.D.tasks].sort((a, b) => a.done - b.done);
@@ -376,7 +403,7 @@ document.addEventListener("click", async (e) => {
   if (act === "resetLogin") {
     const p = S.D.profiles.find((x) => x.id === v);
     if (!confirm(`Give ${p.full_name} a new temporary login? Their current password stops working.`)) return;
-    try { const r = await callAccounts({ action: "reset", user_id: v }); S.creds = { ...r, name: p.full_name, first: p.full_name.split(" ")[0] }; await loadAll(); render(); toast("New temporary login ready."); }
+    try { const r = await callAccounts({ action: "reset", user_id: v }); S.creds = { ...r, name: p.full_name, first: p.full_name.split(" ")[0], email: p.contact_email || "", tripTitle: T(S.tripId)?.title }; await loadAll(); render(); toast("New temporary login ready."); }
     catch (err) { toast(err.message); }
     return;
   }
@@ -459,7 +486,7 @@ document.addEventListener("submit", async (e) => {
     S.busy = true; render();
     try {
       const r = await callAccounts({ action: "invite", trip_id: t, first_name: val("first_name"), last_name: val("last_name"), contact_email: val("contact_email") });
-      S.creds = { ...r, name: `${val("first_name")} ${val("last_name")}`, first: val("first_name") };
+      S.creds = { ...r, name: `${val("first_name")} ${val("last_name")}`, first: val("first_name"), email: val("contact_email"), tripTitle: T(t)?.title };
       S.busy = false; await loadAll(); render(); toast("Temporary login ready.");
     } catch (err) { S.busy = false; render(); toast(err.message); }
     return;
@@ -477,7 +504,7 @@ document.addEventListener("submit", async (e) => {
         await sb.from("advisor_tasks").insert(STARTER_TASKS.map((body) => ({ trip_id: trip.id, body })));
       }
       await sb.from("updates").insert({ trip_id: trip.id, kind: "update", body: "Welcome to your portal! I'll add your plans here as we build your trip together." });
-      S.invited = { ...r, first, tripId: trip.id };
+      S.invited = { ...r, first, tripId: trip.id, email: val("contact_email"), tripTitle: title };
       S.busy = false; await loadAll(); render(); toast("Trip created and login ready.");
     } catch (err) {
       S.busy = false; await loadAll(); show("studio", `The trip was created, but the login wasn't: ${err.message} You can add it from the trip's "Travelers & logins" tab.`);
