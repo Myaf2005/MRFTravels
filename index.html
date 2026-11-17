@@ -15,15 +15,17 @@
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-HWC9ZEL05X', {send_page_view: false});
-function trackPage(){
+function pageInfo(){
   var h = location.hash.slice(1), names = {map:'The map', about:'About', inquire:'Inquire', contact:'Contact'};
   var path = names[h] ? '/' + h : h.indexOf('post-') === 0 ? '/' + h : '/';
-  if(path === trackPage.last) return; trackPage.last = path;
-  gtag('event', 'page_view', {page_title: (names[h] || 'Home') + ' | MRF Travels', page_location: location.origin + path + location.search, page_path: path});
+  return {page_title: (names[h] || 'Home') + ' | MRF Travels', page_location: location.origin + path + location.search, page_path: path};
 }
-trackPage();
-window.addEventListener('hashchange', trackPage);
+var lastPage = pageInfo();
+gtag('config', 'G-HWC9ZEL05X', {page_title: lastPage.page_title, page_location: lastPage.page_location});
+window.addEventListener('hashchange', function(){
+  var p = pageInfo(); if(p.page_path === lastPage.page_path) return; lastPage = p;
+  gtag('event', 'page_view', p);
+});
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Jost:wght@300;400;500&display=swap">
