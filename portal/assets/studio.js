@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171715";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171730";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -240,21 +240,30 @@ function tDocuments(t) {
       ${docs.filter((x) => x.category === "client").map((x) => row(x, false)).join("") || `<p class="empty" style="color:#E59A8C">Nothing yet. Passport copies are still missing.</p>`}</section></div>`;
 }
 
+const seesItem = (vis, uid) => !vis || !vis.length || vis.includes(uid);
+const whoLabel = (vis, tripId) => !vis || !vis.length ? "Everyone on the trip" : vis.map((id) => S.D.profiles.find((p) => p.id === id)?.full_name || "Removed traveler").join(" & ");
 function tCosts(t) {
-  const ps = by(S.D.payments, t.id);
+  const people = clientsOf(t.id);
+  if (S.costFor && !people.some((p) => p.id === S.costFor)) S.costFor = "";
+  const ps = by(S.D.payments, t.id).filter((p) => !S.costFor || seesItem(p.visible_to, S.costFor));
+  const forWho = people.length > 1 ? `<div class="field" style="max-width:360px;margin-bottom:14px"><label for="costFor">Show</label><select id="costFor" class="input" data-change="costFor">
+      <option value="">All costs on this trip</option>${people.map((p) => `<option value="${p.id}" ${S.costFor === p.id ? "selected" : ""}>What ${esc(p.full_name)} sees</option>`).join("")}</select></div>` : "";
   const total = ps.reduce((a, p) => a + Number(p.amount), 0), rec = ps.filter((p) => p.received).reduce((a, p) => a + Number(p.amount), 0);
-  return panel(`<div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:12px"><div><span class="lbl">Total</span><p style="font-family:var(--display);font-size:32px">${money(total)}</p></div>
+  return panel(`${forWho}<div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:12px"><div><span class="lbl">Total</span><p style="font-family:var(--display);font-size:32px">${money(total)}</p></div>
       <div><span class="lbl">Received</span><p style="font-family:var(--display);font-size:32px;color:#BFE0DC">${money(rec)}</p></div><div><span class="lbl">Outstanding</span><p style="font-family:var(--display);font-size:32px;color:var(--gold)">${money(total - rec)}</p></div></div>
     ${ps.length ? ps.map((p) => { const d = daysUntil(p.due_date), receipt = S.D.docs.find((x) => x.id === p.receipt_document_id); return `<div class="list-row">
-      <span style="flex:1 1 200px"><span style="display:block;font-weight:400">${esc(p.name)}</span><span class="muted small">${p.received ? "Was due" : "Due"} ${esc(fmt(p.due_date))}</span></span>
+      <span style="flex:1 1 200px"><span style="display:block;font-weight:400">${esc(p.name)}</span><span class="muted small">${p.received ? "Was due" : "Due"} ${esc(fmt(p.due_date))}</span>
+        ${people.length > 1 || (p.visible_to && p.visible_to.length) ? `<span class="muted small" style="display:block">Seen by: ${esc(whoLabel(p.visible_to, t.id))} · <button class="linkbtn" type="button" data-act="payWho" data-v="${p.id}">Change</button></span>` : ""}</span>
       <span style="flex:0 0 90px">${money(p.amount)}</span><span class="badge ${p.received ? "ok" : d !== null && d < 0 ? "warn" : "wait"}">${p.received ? "Received" : d !== null && d < 0 ? "Overdue" : "Upcoming"}</span>
       <button class="btn line sm" type="button" data-act="togglePay" data-v="${p.id}">${p.received ? "Undo" : "Mark received"}</button>
       ${receipt ? `<button class="linkbtn" type="button" data-act="doc" data-v="${receipt.id}">Receipt</button>` : p.received ? `<label class="upload" style="min-height:36px;padding:6px 12px;font-size:11px">Attach receipt<input type="file" accept=".pdf,.jpg,.jpeg,.png" data-change="receipt" data-v="${p.id}"></label>` : ""}
       <button class="del" type="button" data-act="del" data-t="payments" data-v="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button></div>`; }).join("") : `<p class="muted">No payment schedule yet.</p>`}`,
     `<form data-form="payment"><h3 style="font-size:22px">Add to the schedule</h3>${fld("name", "Name", 'required placeholder="Final balance"')}
       <div class="row2">${fld("amount", "Amount ($)", 'required min="0" step="0.01"', "number")}${fld("due_date", "Due date", "required", "date")}</div>
+      ${people.length > 1 ? `<fieldset style="border:0;padding:0;margin:14px 0 0"><legend class="lbl">Who sees this cost?</legend><p class="muted small" style="margin:2px 0 6px">Tick the travelers it belongs to (both partners for a couple). Leave all unticked for a shared cost everyone sees.</p>
+        ${people.map((p) => `<label class="check" style="display:flex;margin:4px 0"><input type="checkbox" name="who" value="${p.id}" ${S.costFor === p.id ? "checked" : ""}> ${esc(p.full_name)}</label>`).join("")}</fieldset>` : ""}
       <button class="btn sm" type="submit" style="margin-top:14px">Add</button></form>
-    <p class="muted small">Clients only see this as a record. When a payment arrives, mark it received and attach the receipt. It shows up in their Documents too.</p>`);
+    <p class="muted small">Clients only see this as a record. When a payment arrives, mark it received and attach the receipt. It shows up in their Documents too, only for the people who see that cost.</p>`);
 }
 
 function tUpdates(t) {
@@ -434,6 +443,12 @@ document.addEventListener("click", async (e) => {
     try { await callAccounts({ action: "remove", user_id: v }); await loadAll(); render(); toast("Login removed."); } catch (err) { toast(err.message); }
     return;
   }
+  if (act === "payWho") {
+    const p = S.D.payments.find((x) => x.id === v); if (!p) return;
+    const who = await chooseWho(p.trip_id, p.visible_to || [], p.name);
+    if (who === null) return;
+    return run(sb.from("payments").update({ visible_to: who.length ? who : null }).eq("id", v), who.length ? `Now only ${whoLabel(who)} see${who.length === 1 ? "s" : ""} "${p.name}" and its receipt.` : `Everyone on the trip sees "${p.name}" now.`);
+  }
   if (act === "unlinkClient") {
     const p = S.D.profiles.find((x) => x.id === v), t = T(S.tripId);
     if (!(await askConfirm(`${p.full_name} won't see "${t.title}" anymore. They keep their login and their other trips.`, { title: "Remove from this trip?", ok: "Remove from trip", danger: true }))) return;
@@ -451,6 +466,7 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("change", async (e) => {
   const el = e.target.closest("[data-change]"); if (!el) return;
   const kind = el.dataset.change, v = el.dataset.v;
+  if (kind === "costFor") { S.costFor = el.value; return render(); }
   if (kind === "inviteWho") { S.inviteWho = el.value; S.invited = null; S.error = ""; return render(); }
   if (kind === "status") return run(sb.from("trips").update({ status: el.value }).eq("id", S.tripId), "Status updated.");
   if (kind === "task") return run(sb.from("advisor_tasks").update({ done: el.checked }).eq("id", v));
@@ -504,7 +520,11 @@ document.addEventListener("submit", async (e) => {
   if (form === "day") return run(sb.from("itinerary_days").insert({ trip_id: t, title: val("title"), day_date: val("day_date") || null, place: val("place"), sort: by(S.D.days, t).length }), "Day added.");
   if (form === "item") return run(sb.from("itinerary_items").insert({ trip_id: t, day_id: val("day_id"), time_label: val("time_label"), title: val("title"), note: val("note"), sort: S.D.items.filter((x) => x.day_id === val("day_id")).length }), "Added. The client sees it right away.");
   if (form === "booking") return run(sb.from("bookings").insert({ trip_id: t, kind: val("kind"), status: val("status"), name: val("name"), details: val("details"), confirmation_no: val("confirmation_no"), sort: by(S.D.bookings, t).length }), "Reservation added.");
-  if (form === "payment") return run(sb.from("payments").insert({ trip_id: t, name: val("name"), amount: Number(val("amount")), due_date: val("due_date"), sort: by(S.D.payments, t).length }), "Added to the schedule.");
+  if (form === "payment") {
+    const who = Array.from(f.querySelectorAll('input[name="who"]:checked')).map((x) => x.value);
+    return run(sb.from("payments").insert({ trip_id: t, name: val("name"), amount: Number(val("amount")), due_date: val("due_date"), sort: by(S.D.payments, t).length, visible_to: who.length ? who : null }),
+      who.length ? `Added. Only ${whoLabel(who, t)} will see it.` : "Added to the schedule.");
+  }
   if (form === "update") return run(sb.from("updates").insert({ trip_id: t, kind: val("kind"), body: val("body"), link_section: val("link_section") || null, link_document_id: val("link_document_id") || null }), "Posted. It's in their Updates & reminders now.");
   if (form === "check") return run(sb.from("checklist_items").insert({ trip_id: t, title: val("title"), note: val("note"), sort: by(S.D.checklist, t).length }), "Added to their checklist.");
   if (form === "task") return run(sb.from("advisor_tasks").insert({ trip_id: val("trip_id") || (S.view === "trip" ? t : null), body: val("body") }), "To-do added.");
@@ -562,6 +582,25 @@ document.addEventListener("submit", async (e) => {
     }
   }
 });
+
+// pick which travelers see a cost → Promise<string[] | null>
+function chooseWho(tripId, current, name) {
+  return new Promise((resolve) => {
+    const people = clientsOf(tripId);
+    const wrap = document.createElement("div"); wrap.className = "overlay";
+    wrap.innerHTML = `<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="cw-t" style="max-width:480px">
+      <div style="padding:28px 28px 8px;display:flex;flex-direction:column;gap:12px"><h2 id="cw-t" style="font-size:28px">Who sees "${esc(name)}"?</h2>
+      <p class="muted small">Tick the travelers this cost belongs to. Its receipt follows. Leave all unticked for a shared cost everyone on the trip sees.</p>
+      ${people.map((p) => `<label class="check" style="display:flex"><input type="checkbox" value="${p.id}" ${current.includes(p.id) ? "checked" : ""}> ${esc(p.full_name)}</label>`).join("") || `<p class="muted">No travelers have a login on this trip yet.</p>`}</div>
+      <div class="df"><button class="btn line sm" type="button" data-x>Cancel</button><button class="btn sm" type="button" data-ok>Save</button></div></div>`;
+    const done = (val) => { wrap.remove(); resolve(val); };
+    wrap.addEventListener("click", (e) => {
+      if (e.target === wrap || e.target.closest("[data-x]")) return done(null);
+      if (e.target.closest("[data-ok]")) done(Array.from(wrap.querySelectorAll("input:checked")).map((x) => x.value));
+    });
+    document.body.appendChild(wrap); wrap.querySelector("input,[data-ok]")?.focus();
+  });
+}
 
 // ---------------- view the portal as a client (read-only preview) ----------------
 function pickClient() {

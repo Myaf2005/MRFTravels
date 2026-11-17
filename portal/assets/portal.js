@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171715";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171730";
 
 const app = $("#app");
 const S = {
@@ -88,9 +88,11 @@ async function loadTrip() {
   if (S.preview) rq = rq.eq("user_id", S.profile.id || "00000000-0000-0000-0000-000000000000");
   const reads = updIds.length ? await rq : { data: [] };
   const daysSorted = (days.data || []).sort((a, b) => (a.day_date || "").localeCompare(b.day_date || "") || a.sort - b.sort);
+  // previewing as a client: show only what that client is allowed to see (Mya's own session can see everything)
+  const sees = (vis) => !S.preview || !vis || !vis.length || vis.includes(S.profile.id);
   S.d = {
     days: daysSorted.map((d) => ({ ...d, items: (items.data || []).filter((i) => i.day_id === d.id).sort((a, b) => a.sort - b.sort) })),
-    bookings: bookings.data || [], docs: docs.data || [], payments: payments.data || [],
+    bookings: bookings.data || [], docs: (docs.data || []).filter((x) => sees(x.visible_to)), payments: (payments.data || []).filter((x) => sees(x.visible_to)),
     updates: updates.data || [], read: new Set((reads.data || []).map((r) => r.update_id)), checklist: checklist.data || [],
   };
   if (S.day >= S.d.days.length) S.day = 0;
