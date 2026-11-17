@@ -21,7 +21,9 @@ function pageInfo(){
   return {page_title: (names[h] || 'Home') + ' | MRF Travels', page_location: location.origin + path + location.search, page_path: path};
 }
 var lastPage = pageInfo();
-gtag('config', 'G-HWC9ZEL05X', {page_title: lastPage.page_title, page_location: lastPage.page_location});
+gtag('config', 'G-HWC9ZEL05X');
+/* Google counts the first load itself as the home page; a visitor who lands straight on another page gets that page counted too */
+if(lastPage.page_path !== '/') gtag('event', 'page_view', lastPage);
 window.addEventListener('hashchange', function(){
   var p = pageInfo(); if(p.page_path === lastPage.page_path) return; lastPage = p;
   gtag('event', 'page_view', p);
