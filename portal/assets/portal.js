@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171730";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171805";
 
 const app = $("#app");
 const S = {
@@ -26,7 +26,7 @@ async function afterSignIn() {
   if (profile.role === "advisor") {
     const pid = new URLSearchParams(location.search).get("preview");
     if (!pid) { location.href = "studio/"; return; }
-    return startPreview(profile, pid);
+    return startPreview(profile, pid, new URLSearchParams(location.search).get("as"));
   }
   S.profile = profile;
   if (profile.must_set_login) return show("setup");
@@ -35,18 +35,21 @@ async function afterSignIn() {
 }
 
 // Mya previewing a client's portal from the Studio: same screens, but nothing is saved.
-async function startPreview(advisor, tripId) {
+async function startPreview(advisor, tripId, asId) {
   const { data: all } = await sb.from("trips").select("*").order("start_date", { ascending: true });
   if (!(all || []).some((t) => t.id === tripId)) { location.href = "studio/"; return; }
   const { data: members } = await sb.from("trip_members").select("*");
   const { data: profiles } = await sb.from("profiles").select("id,full_name,role");
   const clientIds = (members || []).filter((m) => m.trip_id === tripId).map((m) => m.user_id);
   const clients = (profiles || []).filter((p) => clientIds.includes(p.id));
-  const first = clients[0];
+  const first = clients.find((c) => c.id === asId) || clients[0];
   const trip = all.find((t) => t.id === tripId);
+  const nameOf = (id) => (profiles || []).find((p) => p.id === id)?.full_name || "";
+  // one entry per person per trip, so Mya can jump to anyone
+  const people = all.map((t) => ({ trip: t, ids: (members || []).filter((m) => m.trip_id === t.id).map((m) => m.user_id).sort((a, b) => nameOf(a).localeCompare(nameOf(b))) }));
   S.preview = {
-    advisor, clients,
-    all: all.map((t) => ({ id: t.id, label: (t.travelers || (members || []).filter((m) => m.trip_id === t.id).map((m) => (profiles || []).find((p) => p.id === m.user_id)?.full_name).filter(Boolean).join(" & ") || t.title) + " · " + t.title })),
+    advisor, clients, as: first?.id || "",
+    groups: people.map(({ trip: t, ids }) => ({ title: t.title, options: ids.length ? ids.map((id) => ({ value: `${t.id}|${id}`, label: nameOf(id) })) : [{ value: `${t.id}|`, label: "No client login yet" }] })),
   };
   // what this client would see: the trips they belong to (or just this one if no login yet)
   S.profile = first ? { ...first } : { id: null, full_name: trip.travelers || "Your client" };
@@ -58,11 +61,12 @@ async function startPreview(advisor, tripId) {
 const previewBlock = (what) => { toast(`Preview: ${what} only works for the client. Nothing was changed.`); };
 function previewBar() {
   if (!S.preview) return "";
-  const names = S.preview.clients.map((c) => c.full_name).join(" & ") || "this trip (no client login yet)";
+  const names = S.preview.as ? S.profile.full_name : "this trip (no client login yet)";
+  const cur = `${S.tripId}|${S.preview.as}`;
   return `<div class="preview-bar noprint" role="region" aria-label="Preview"><div class="in">
     <span><b>Preview</b> · Viewing as ${esc(names)}. Nothing you click here changes their trip.</span>
     <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label class="sr" for="pv-pick">Switch client</label>
-    <select id="pv-pick" class="input" data-change="previewSwitch">${S.preview.all.map((t) => `<option value="${t.id}" ${t.id === S.tripId ? "selected" : ""}>${esc(t.label)}</option>`).join("")}</select>
+    <select id="pv-pick" class="input" data-change="previewSwitch">${S.preview.groups.map((g) => `<optgroup label="${esc(g.title)}">${g.options.map((o) => `<option value="${o.value}" ${o.value === cur ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</optgroup>`).join("")}</select>
     <a class="btn gold sm" href="studio/">Back to Studio</a></span></div></div>`;
 }
 
@@ -434,7 +438,7 @@ document.addEventListener("change", async (e) => {
   const el = e.target.closest("[data-change]");
   if (!el) return;
   const kind = el.dataset.change;
-  if (kind === "previewSwitch") { location.href = "?preview=" + encodeURIComponent(el.value); return; }
+  if (kind === "previewSwitch") { const [t, u] = el.value.split("|"); location.href = "?preview=" + encodeURIComponent(t) + (u ? "&as=" + encodeURIComponent(u) : ""); return; }
   if (kind === "trip") { S.tripId = el.value; try { localStorage.setItem("mrf-trip", el.value); } catch {} S.section = "overview"; S.day = 0; await loadTrip(); return render(); }
   if (kind === "check") {
     const item = S.d.checklist.find((x) => x.id === el.dataset.v); const val = el.checked;

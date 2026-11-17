@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171730";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171805";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -185,7 +185,7 @@ function vTrip() {
   const body = { itinerary: tItinerary, bookings: tBookings, documents: tDocuments, costs: tCosts, updates: tUpdates, checklist: tChecklist, tasks: tTasks, people: tPeople, details: tDetails }[S.tab](t);
   return `<button class="btn line sm" type="button" data-act="view" data-v="trips" style="align-self:flex-start">← All trips</button>
     <div class="head"><div class="t"><p class="eyebrow">${esc(dates(t).toUpperCase())}${d !== null && d >= 0 ? ` · ${d} DAYS OUT` : ""}</p><h1>${esc(t.title)}</h1><p class="muted">${esc(tripLabel(t))}</p></div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><a class="btn line sm" href="../?preview=${t.id}">View as client</a><label class="sr" for="status">Trip status</label>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn line sm" type="button" data-act="viewAs" data-v="${t.id}">View as client</button><label class="sr" for="status">Trip status</label>
       <select id="status" class="input" style="width:auto;min-width:150px" data-change="status">${["Planning", "Booked", "Traveling", "Complete"].map((s) => `<option ${s === t.status ? "selected" : ""}>${s}</option>`).join("")}</select></div></div>
     ${creds}${tabs}${body}`;
 }
@@ -414,7 +414,7 @@ document.addEventListener("click", async (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
   const { act, v } = el.dataset;
   if (act === "signout") { await sb.auth.signOut(); S.D = null; return show("signin"); }
-  if (act === "viewAs") return pickClient();
+  if (act === "viewAs") return pickClient(v);
   if (act === "view") { S.view = v; S.error = ""; S.creds = null; render(); return scrollTo(0, 0); }
   if (act === "open") { S.view = "trip"; S.tripId = v; S.tab = el.dataset.tab || "itinerary"; S.creds = null; render(); return scrollTo(0, 0); }
   if (act === "tab") { S.tab = v; return render(); }
@@ -603,16 +603,18 @@ function chooseWho(tripId, current, name) {
 }
 
 // ---------------- view the portal as a client (read-only preview) ----------------
-function pickClient() {
-  const trips = [...S.D.trips].sort((a, b) => (a.start_date || "9").localeCompare(b.start_date || "9"));
+function pickClient(onlyTrip) {
+  const trips = [...S.D.trips].filter((t) => !onlyTrip || t.id === onlyTrip).sort((a, b) => (a.start_date || "9").localeCompare(b.start_date || "9"));
+  const personRow = (t, p) => `<a class="rowbtn" href="../?preview=${t.id}&as=${p.id}" style="text-decoration:none;color:inherit"><span style="flex:1;min-width:0"><span class="nm" style="display:block">${esc(p.full_name)}</span><span class="muted" style="font-size:13px">${esc(p.username || "")}${p.must_set_login ? " · hasn't signed in yet" : ""}</span></span><span class="eyebrow" style="font-size:11px">View</span></a>`;
   const wrap = document.createElement("div");
   wrap.className = "overlay";
   const close = () => { wrap.remove(); document.removeEventListener("keydown", onKey); };
   const onKey = (e) => { if (e.key === "Escape") close(); };
   wrap.innerHTML = `<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="va-t" style="max-width:560px">
-    <div class="dh"><h2 id="va-t" style="font-size:28px">View as client</h2><button class="btn line sm" type="button" data-x>Close</button></div>
-    <div style="padding:8px 24px 20px;overflow:auto"><p class="muted small" style="margin:8px 0 12px">Opens their portal exactly as they see it. Nothing you click there changes their trip.</p>
-    ${trips.length ? trips.map((t) => `<a class="rowbtn" href="../?preview=${t.id}" style="text-decoration:none;color:inherit"><span style="flex:1;min-width:0"><span class="nm" style="display:block">${esc(tripLabel(t))}</span><span class="muted" style="font-size:13px">${esc(t.title)} · ${esc(dates(t))}</span></span><span class="eyebrow" style="font-size:11px">${clientsOf(t.id).length ? "Open" : "No login yet"}</span></a>`).join("") : `<p class="muted">No trips yet.</p>`}</div></div>`;
+    <div class="dh"><h2 id="va-t" style="font-size:28px">Who do you want to view as?</h2><button class="btn line sm" type="button" data-x>Close</button></div>
+    <div style="padding:8px 24px 20px;overflow:auto;min-height:0"><p class="muted small" style="margin:8px 0 12px">Opens their portal exactly as they see it. Nothing you click there changes their trip.</p>
+    ${trips.length ? trips.map((t) => { const ps = clientsOf(t.id).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+      return `<p class="eyebrow" style="margin:18px 0 2px">${esc(t.title)} · ${esc(dates(t))}</p>${ps.length ? ps.map((p) => personRow(t, p)).join("") : `<a class="rowbtn" href="../?preview=${t.id}" style="text-decoration:none;color:inherit"><span style="flex:1" class="muted">No client login yet · preview the trip</span><span class="eyebrow" style="font-size:11px">View</span></a>`}`; }).join("") : `<p class="muted">No trips yet.</p>`}</div></div>`;
   wrap.addEventListener("click", (e) => { if (e.target === wrap || e.target.closest("[data-x]")) close(); });
   document.addEventListener("keydown", onKey);
   document.body.appendChild(wrap);
