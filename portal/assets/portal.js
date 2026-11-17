@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate } from "./lib.js?v=202611171255";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate } from "./lib.js?v=202611171259";
 
 const app = $("#app");
 const S = {
@@ -153,7 +153,8 @@ function secOverview() {
   const first = d.days.slice(0, 3);
   return `<section class="banner"><div style="flex:1 1 360px;display:flex;flex-direction:column;gap:14px">
       <p class="eyebrow">${esc(datesLine(t).toUpperCase())}</p><h1>${esc(t.title)}</h1><p>${esc(t.travelers)}</p></div>
-      ${dd !== null && dd >= 0 ? `<div class="days"><b>${dd}</b><span>${dd === 1 ? "DAY" : "DAYS"} TO GO</span></div>` : ""}</section>
+      <div style="display:flex;flex-direction:column;gap:18px;align-items:flex-end">${dd !== null && dd >= 0 ? `<div class="days"><b>${dd}</b><span>${dd === 1 ? "DAY" : "DAYS"} TO GO</span></div>` : ""}
+      <button class="btn gold sm noprint" type="button" data-act="pdf">Download itinerary (PDF)</button></div></section>
     <div class="grid">
       <button class="card stat" type="button" data-act="go" data-v="bookings"><span class="k">Reservations</span><span class="n">${confirmed} of ${d.bookings.length}</span><span class="muted small">confirmed</span></button>
       <button class="card stat" type="button" data-act="go" data-v="costs"><span class="k">Next due date</span><span class="n">${next ? esc(fmt(next.due_date, { month: "short", day: "numeric" })) : "—"}</span><span class="muted small">${next ? `${esc(next.name)} · ${money(next.amount)}` : "Nothing due"}</span></button>
@@ -180,7 +181,7 @@ function secItinerary() {
   const day = days[S.day];
   const dt = day.day_date ? toDate(day.day_date) : null;
   const label = `Day ${S.day + 1}${dt ? " · " + dt.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : ""}`;
-  return head("Itinerary", "Day by day", `<button class="btn line sm noprint" type="button" data-act="print">Print or save as PDF</button>`) +
+  return head("Itinerary", "Day by day", `<button class="btn sm noprint" type="button" data-act="pdf">Download itinerary (PDF)</button>`) +
     `<div class="chips noprint" role="group" aria-label="Choose a day">${days.map((d, i) => {
       const x = d.day_date ? toDate(d.day_date) : null;
       return `<button class="chip" type="button" data-act="day" data-v="${i}" aria-pressed="${i === S.day}"><small>${x ? x.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase() : "DAY"}</small><b>${x ? x.getDate() : i + 1}</b></button>`;
@@ -274,6 +275,56 @@ function secUpdates() {
     <p class="muted small">Have a question? Reach Mya directly on WhatsApp, by phone or by text. Details are under <button class="linkbtn" type="button" data-act="go" data-v="essentials">Before you go</button>.</p>`;
 }
 
+// ---------------- MRF itinerary keepsake (PDF via the browser's Save as PDF) ----------------
+function itineraryDoc() {
+  const t = trip(), d = S.d;
+  const nights = t.start_date && t.end_date ? Math.round((toDate(t.end_date) - toDate(t.start_date)) / 86400000) : null;
+  const longDate = (iso) => (iso ? toDate(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "");
+  const confirmed = d.bookings.filter((b) => b.status === "Confirmed").length;
+  const places = [...new Set(d.days.map((x) => x.place).filter(Boolean).flatMap((p) => p.split(/\s*→\s*/)))].slice(0, 6);
+  const cover = `<section class="pg"><div class="cover">
+      <div class="brand"><b>MRF</b><span>TRAVELS</span></div>
+      <div class="mid"><p class="kicker">Your private itinerary</p><h1>${esc(t.title)}</h1><div class="rule"></div>
+        <p class="who">Prepared for ${esc(t.travelers || S.profile.full_name)}</p>
+        <p class="dates">${esc(datesLine(t))}</p></div>
+      <div class="foot"><div><b>${esc(ADVISOR.name)}</b>Luxury Travel Advisor · ${esc(ADVISOR.phoneShown)}</div><div>mrftravels.com</div></div>
+    </div></section>`;
+  const glance = `<section class="pg"><div class="sec-h"><p class="eyebrow">At a glance</p><h2>Your journey</h2></div>
+      <div class="glance"><div><span class="eyebrow">Departing</span><b>${esc(fmt(t.start_date, { month: "short", day: "numeric" }))}</b><span class="dt">${t.start_date ? esc(`${fmt(t.start_date, { weekday: "long" })}, ${toDate(t.start_date).getFullYear()}`) : ""}</span></div>
+        <div><span class="eyebrow">Length</span><b>${nights ?? "—"} nights</b><span class="dt">${d.days.length} days planned</span></div>
+        <div><span class="eyebrow">Reservations</span><b>${confirmed} of ${d.bookings.length}</b><span class="dt">confirmed as of ${esc(fmt(new Date().toISOString().slice(0, 10)))}</span></div></div>
+      ${places.length ? `<p style="margin-bottom:8mm;font-family:'Bodoni Moda',serif;font-style:italic;font-size:13pt;color:#0C343A">${places.map(esc).join("  ·  ")}</p>` : ""}
+      ${d.bookings.length ? `<table><thead><tr><th style="width:52%">Reservation</th><th>Confirmation</th><th>Status</th></tr></thead><tbody>
+        ${d.bookings.map((b) => `<tr><td><span class="nm">${esc(b.name)}</span><br><span class="dt">${esc(b.details)}</span></td><td class="conf">${esc(b.confirmation_no || "—")}</td><td><span class="st ${b.status === "Confirmed" ? "ok" : "wait"}">${b.status === "Confirmed" ? "Confirmed" : "In progress"}</span></td></tr>`).join("")}</tbody></table>` : ""}
+    </section>`;
+  const days = d.days.length ? `<section class="pg"><div class="sec-h"><p class="eyebrow">Day by day</p><h2>Your itinerary</h2></div>
+      ${d.days.map((day, i) => { const x = day.day_date ? toDate(day.day_date) : null; return `<div class="day">
+        <div class="date"><small>Day ${i + 1}</small><b>${x ? x.getDate() : i + 1}</b><span>${x ? `${x.toLocaleDateString("en-US", { weekday: "short" })} · ${x.toLocaleDateString("en-US", { month: "short" })}` : ""}</span></div>
+        <div><h3>${esc(day.title)}</h3>${day.place ? `<p class="place">${esc(day.place)}</p>` : `<div style="height:3mm"></div>`}
+          ${day.items.length ? day.items.map((e) => `<div class="ev"><span class="t">${esc(e.time_label)}</span><span><span class="w">${esc(e.title)}</span>${e.note ? `<span class="n">${esc(e.note)}</span>` : ""}</span></div>`).join("") : `<p class="dt">A free day to enjoy at your own pace.</p>`}</div></div>`; }).join("")}
+    </section>` : "";
+  const finale = `<section><div class="sec-h"><p class="eyebrow">Before you go</p><h2>Details &amp; contacts</h2></div>
+      <div class="two"><div>${d.checklist.length ? d.checklist.map((c) => `<div class="chk"><i class="${c.done ? "on" : ""}"></i><span><span class="w" style="font-weight:400">${esc(c.title)}</span>${c.note ? `<span class="n">${esc(c.note)}</span>` : ""}</span></div>`).join("") : `<p class="dt">Your advisor will share your pre-departure checklist.</p>`}</div>
+        <div><div class="box dark"><p class="eyebrow">Your advisor</p><h3>${esc(ADVISOR.name)}</h3>
+          <p>Traveling abroad: message or call on WhatsApp.</p><p>Within the US: call or text.</p><p class="num">${esc(ADVISOR.phoneShown)}</p>
+          <p style="margin-top:4mm">Your live portal, always up to date: mrftravels.com/portal</p></div></div></div>
+      <div class="closing"><p>Wishing you a beautiful journey.</p><span>MRF Travels · Bespoke luxury travel</span></div></section>`;
+  return `<div class="pdoc">${cover}${glance}${days}${finale}</div>`;
+}
+
+async function makePdf() {
+  let root = document.getElementById("print-root");
+  if (!root) { root = document.createElement("div"); root.id = "print-root"; document.body.appendChild(root); }
+  root.innerHTML = itineraryDoc();
+  const t = trip(); const oldTitle = document.title;
+  document.title = `MRF Travels Itinerary - ${t.title}`; // becomes the PDF's file name
+  toast("Choose “Save as PDF” as the destination to download your itinerary.");
+  try { await document.fonts?.ready; } catch {}
+  const img = new Image(); img.src = new URL("sign-in.jpg", import.meta.url).href;
+  await Promise.race([img.decode().catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
+  setTimeout(() => { window.print(); setTimeout(() => { document.title = oldTitle; }, 500); }, 150);
+}
+
 // ---------------- actions ----------------
 async function markRead(ids) {
   const fresh = ids.filter((id) => !S.d.read.has(id));
@@ -292,7 +343,7 @@ document.addEventListener("click", async (e) => {
   if (act === "day") { S.section = "itinerary"; S.day = Math.max(0, Math.min(Number(v), S.d.days.length - 1)); return render(); }
   if (act === "filter") { S.filter = v; return render(); }
   if (act === "updFilter") { S.updFilter = v; return render(); }
-  if (act === "print") return window.print();
+  if (act === "pdf") return makePdf();
   if (act === "readAll") { await markRead(S.d.updates.map((u) => u.id)); return render(); }
   if (act === "doc") {
     const d = doc(v); if (!d) return;

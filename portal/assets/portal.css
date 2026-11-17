@@ -175,4 +175,69 @@ body.studio .toast{background:#D3B47E;color:#14110B}
   .banner{padding:28px}.banner h1{font-size:36px}.head h1{font-size:34px}
   .panel-card{padding:28px}.card{padding:22px}
 }
+/* ================= MRF itinerary keepsake (PDF) ================= */
+#print-root{display:none}
+@media print{
+  @page{size:letter;margin:14mm 15mm 16mm}
+  @page{@bottom-center{content:"MRF Travels  ·  Bespoke luxury travel  ·  " counter(page);font-family:"Jost",sans-serif;font-size:8pt;letter-spacing:.18em;color:#8A6A38}}
+  html,body{background:#fff !important}
+  body>*:not(#print-root){display:none !important}
+  #print-root{display:block !important}
+}
+.pdoc{font-family:"Jost","Futura",sans-serif;font-weight:300;color:#14251F;font-size:10.5pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pdoc h1,.pdoc h2,.pdoc h3{font-family:"Bodoni Moda","Didot",Georgia,serif;font-weight:400;margin:0;line-height:1.1}
+.pdoc p{margin:0}
+.pdoc .pg{break-after:page}
+.pdoc .cover{height:247mm;position:relative;background:#0C343A url(sign-in.jpg) center/cover no-repeat;color:#F3EEE3;padding:18mm 16mm;display:flex;flex-direction:column}
+.pdoc .cover .brand{display:flex;align-items:baseline;gap:4mm}
+.pdoc .cover .brand b{font-family:"Bodoni Moda",serif;font-weight:500;font-size:22pt;letter-spacing:.08em}
+.pdoc .cover .brand span{font-size:8pt;letter-spacing:.42em;color:#D3B47E}
+.pdoc .cover .mid{margin-top:34mm;max-width:62%}
+.pdoc .cover .kicker{font-size:8.5pt;letter-spacing:.34em;color:#D3B47E;text-transform:uppercase}
+.pdoc .cover h1{font-size:34pt;margin-top:5mm}
+.pdoc .cover .rule{width:22mm;height:1px;background:#D3B47E;margin:7mm 0}
+.pdoc .cover .who{font-size:12pt;color:#F3EEE3}
+.pdoc .cover .dates{font-size:9.5pt;letter-spacing:.2em;color:#DCD6CA;text-transform:uppercase;margin-top:2mm}
+.pdoc .cover .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;font-size:8.5pt;color:#DCD6CA;letter-spacing:.06em}
+.pdoc .cover .foot b{display:block;font-family:"Bodoni Moda",serif;font-weight:400;font-size:13pt;color:#F3EEE3;letter-spacing:0}
+.pdoc .eyebrow{font-size:7.5pt;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:#8A6A38}
+.pdoc .sec-h{display:flex;flex-direction:column;gap:2mm;padding-bottom:4mm;margin-bottom:6mm;border-bottom:1px solid #DCD2BF}
+.pdoc .sec-h h2{font-size:24pt}
+.pdoc .glance{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm;margin-bottom:8mm}
+.pdoc .glance div{border:1px solid #DCD2BF;padding:4mm 5mm}
+.pdoc .glance b{display:block;font-family:"Bodoni Moda",serif;font-weight:400;font-size:18pt;line-height:1.1;margin-top:1mm}
+.pdoc table{width:100%;border-collapse:collapse;font-size:9pt}
+.pdoc th{text-align:left;font-size:7pt;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:#56635D;padding:0 3mm 2.5mm 0;border-bottom:1px solid #0C343A}
+.pdoc td{padding:2.6mm 3mm 2.6mm 0;border-bottom:1px solid #EEE7DA;vertical-align:top}
+.pdoc tr{break-inside:avoid}
+.pdoc td .nm{font-weight:400;color:#14251F}
+.pdoc td .dt{color:#56635D;font-size:8.5pt}
+.pdoc .conf{letter-spacing:.06em;font-weight:500;white-space:nowrap}
+.pdoc .st{font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.pdoc .st.ok{color:#0C343A}.pdoc .st.wait{color:#8A6A38}
+.pdoc .day{break-inside:avoid;display:grid;grid-template-columns:30mm 1fr;gap:6mm;padding:6mm 0;border-bottom:1px solid #EEE7DA}
+.pdoc .day .date{border-right:1px solid #D3B47E;padding-right:4mm}
+.pdoc .day .date small{display:block;font-size:7pt;letter-spacing:.26em;color:#8A6A38;text-transform:uppercase}
+.pdoc .day .date b{display:block;font-family:"Bodoni Moda",serif;font-weight:400;font-size:28pt;line-height:1}
+.pdoc .day .date span{display:block;font-size:7.5pt;letter-spacing:.18em;color:#56635D;text-transform:uppercase;margin-top:1mm}
+.pdoc .day h3{font-size:15pt}
+.pdoc .day .place{font-size:8.5pt;letter-spacing:.16em;text-transform:uppercase;color:#56635D;margin:1mm 0 3mm}
+.pdoc .ev{display:grid;grid-template-columns:22mm 1fr;gap:3mm;padding:1.4mm 0}
+.pdoc .ev .t{font-size:8.5pt;font-weight:500;color:#0C343A}
+.pdoc .ev .w{font-weight:400}
+.pdoc .ev .n{display:block;color:#56635D;font-size:8.8pt}
+.pdoc .two{display:grid;grid-template-columns:1.4fr 1fr;gap:8mm}
+.pdoc .box{border:1px solid #DCD2BF;padding:6mm}
+.pdoc .box.dark{background:#0C343A;color:#F3EEE3;border-color:#0C343A}
+.pdoc .box.dark .eyebrow{color:#D3B47E}
+.pdoc .box.dark h3{font-size:16pt;margin:2mm 0 3mm}
+.pdoc .box.dark p{color:#DCD6CA;font-size:9pt;margin-top:2mm}
+.pdoc .box.dark .num{font-size:12pt;color:#F3EEE3;letter-spacing:.04em;margin-top:3mm}
+.pdoc .chk{display:grid;grid-template-columns:5mm 1fr;gap:3mm;padding:2.2mm 0;border-bottom:1px solid #EEE7DA;break-inside:avoid}
+.pdoc .chk i{width:3.6mm;height:3.6mm;border:1px solid #8A6A38;margin-top:1mm;display:block}
+.pdoc .chk i.on{background:#8A6A38}
+.pdoc .chk .n{display:block;color:#56635D;font-size:8.6pt}
+.pdoc .closing{text-align:center;margin-top:14mm;padding-top:8mm;border-top:1px solid #DCD2BF}
+.pdoc .closing p{font-family:"Bodoni Moda",serif;font-style:italic;font-size:15pt;color:#0C343A}
+.pdoc .closing span{display:block;font-size:7.5pt;letter-spacing:.34em;color:#8A6A38;margin-top:3mm;text-transform:uppercase}
 @media print{.top,.side,.noprint{display:none !important}.shell{padding:0}}
