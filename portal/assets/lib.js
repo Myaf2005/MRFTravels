@@ -218,3 +218,17 @@ export function tzNote(place, dateIso) {
   }
   return out.length ? `All times are local · ${out.join(" → ")}` : "All times are local to where you are that day";
 }
+
+// ---------- trip costs: the same four numbers everywhere ----------
+// total = everything; paid = received; toPay = still owed before/apart from the trip; onSite = paid at the destination
+export function costSummary(ps) {
+  const sum = (xs) => xs.reduce((a, p) => a + Number(p.amount || 0), 0);
+  const paid = ps.filter((p) => p.received), onSite = ps.filter((p) => !p.received && p.paid_on_site), toPay = ps.filter((p) => !p.received && !p.paid_on_site);
+  const next = toPay.filter((p) => p.due_date).sort((a, b) => a.due_date.localeCompare(b.due_date))[0] || null;
+  return { total: sum(ps), paid: sum(paid), toPay: sum(toPay), onSite: sum(onSite), next };
+}
+// paid first? no: what's owed soonest first, then at the destination, then already paid
+export function costOrder(ps) {
+  const rank = (p) => (p.received ? 2 : p.paid_on_site ? 1 : 0);
+  return [...ps].sort((a, b) => rank(a) - rank(b) || (a.due_date || "9999").localeCompare(b.due_date || "9999") || (a.sort || 0) - (b.sort || 0));
+}

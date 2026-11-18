@@ -279,3 +279,11 @@ body.studio .toast{background:#D3B47E;color:#14110B}
 .mtile{gap:6px;min-height:170px}
 .mtile .small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pill .count{display:inline-block;margin-left:6px;opacity:.75;font-weight:400}
+/* Trip costs summary (same on every trip) */
+.cost-sum{padding:34px;display:flex;flex-direction:column;gap:18px}
+.cost-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.cost-n b{display:block;font-family:var(--display);font-weight:400;font-size:clamp(26px,3.2vw,38px);line-height:1.1;color:var(--ink)}
+.cost-n.ok b{color:var(--teal)}
+.cost-n.due b{color:#8A6A38}
+.cost-total{border-top:1px solid var(--line);margin-top:4px}
+@media (max-width:760px){.cost-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

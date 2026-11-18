@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote } from "./lib.js?v=202611172150";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote, costSummary, costOrder } from "./lib.js?v=202611172200";
 
 const app = $("#app");
 const S = {
@@ -296,20 +296,22 @@ function secDocuments() {
 }
 
 function secCosts() {
-  const ps = S.d.payments;
-  const total = ps.reduce((a, p) => a + Number(p.amount), 0), rec = ps.filter((p) => p.received).reduce((a, p) => a + Number(p.amount), 0);
-  const pct = total ? Math.round((rec / total) * 100) : 0;
-  return head("Trip costs", "What's received, what's coming", "", "Payments are arranged directly with Mya. This page is your record of the schedule and your receipts.") +
-    (ps.length ? `<section class="card" style="padding:34px;display:flex;flex-direction:column;gap:24px">
-      <div class="grid"><div><span class="lbl">Trip total</span><p style="font-family:var(--display);font-size:40px;line-height:1.1">${money(total)}</p></div>
-        <div><span class="lbl">Received</span><p style="font-family:var(--display);font-size:40px;line-height:1.1;color:var(--teal)">${money(rec)}</p></div>
-        <div><span class="lbl">Remaining</span><p style="font-family:var(--display);font-size:40px;line-height:1.1">${money(total - rec)}</p></div></div>
-      <div class="progress" role="img" aria-label="${pct}% received"><i style="width:${pct}%"></i></div></section>
-    <section class="card" style="padding:30px 34px"><h2 style="font-size:28px;margin-bottom:12px">Schedule</h2>
-      ${ps.map((p) => `<div class="list-row"><div style="flex:1 1 220px"><p style="font-size:17px;font-weight:400">${esc(p.name)}</p><p class="muted small">${p.received ? "Received" : "Due"} ${esc(fmtLong(p.due_date))}</p></div>
-        <span style="flex:0 0 110px;font-size:17px;font-weight:400">${money(p.amount)}</span><span class="badge ${p.received ? "ok" : "wait"}">${p.received ? "Received" : "Upcoming"}</span>
-        ${p.receipt_document_id && doc(p.receipt_document_id) ? `<button class="linkbtn" type="button" data-act="doc" data-v="${p.receipt_document_id}">View receipt</button>` : ""}</div>`).join("")}</section>`
-      : `<div class="card"><p class="muted">Your payment schedule will appear here once your trip is booked.</p></div>`);
+  const ps = S.d.payments, c = costSummary(ps);
+  const pct = c.total ? Math.round((c.paid / c.total) * 100) : 0;
+  const status = (p) => p.received ? `<span class="badge ok">Paid</span>` : p.paid_on_site ? `<span class="badge muted">Pay at destination</span>` : `<span class="badge wait">${p.due_date ? "Due " + esc(fmt(p.due_date, { month: "short", day: "numeric" })) : "To pay"}</span>`;
+  const sub = (p) => p.received ? (p.due_date ? `Paid · was due ${esc(fmtLong(p.due_date))}` : "Paid") : p.paid_on_site ? `Paid there${p.due_date ? " · " + esc(fmtLong(p.due_date)) : ""}` : p.due_date ? `Due ${esc(fmtLong(p.due_date))}` : "Payment date to be confirmed";
+  const num = (k, v, cls = "") => `<div class="cost-n ${cls}"><span class="lbl">${k}</span><b>${money(v)}</b></div>`;
+  return head("Trip costs", "Your trip at a glance", "", "Payments are arranged directly with Mya. This page is your record of what everything costs and what's been paid.") +
+    (ps.length ? `<section class="card cost-sum">
+      <div class="cost-grid">${num("Trip total", c.total)}${num("Paid", c.paid, "ok")}${num("Left to pay", c.toPay, "due")}${num("Paid at the destination", c.onSite)}</div>
+      <div class="progress" role="img" aria-label="${pct}% paid"><i style="width:${pct}%"></i></div>
+      <p class="muted small">${pct}% paid${c.next ? ` · Next: ${esc(c.next.name)}, ${money(c.next.amount)} due ${esc(fmtLong(c.next.due_date))}` : c.toPay ? "" : c.onSite ? " · Nothing left to pay before you go" : " · All paid"}</p></section>
+    <section class="card" style="padding:30px 34px"><h2 style="font-size:28px;margin-bottom:12px">What everything costs</h2>
+      ${costOrder(ps).map((p) => `<div class="list-row"><div style="flex:1 1 240px"><p style="font-size:17px;font-weight:400">${esc(p.name)}</p><p class="muted small">${sub(p)}</p></div>
+        <span style="flex:0 0 110px;font-size:17px;font-weight:400;text-align:right">${money(p.amount)}</span>${status(p)}
+        ${p.receipt_document_id && doc(p.receipt_document_id) ? `<button class="linkbtn" type="button" data-act="doc" data-v="${p.receipt_document_id}">View receipt</button>` : ""}</div>`).join("")}
+      <div class="list-row cost-total"><div style="flex:1 1 240px"><p style="font-size:17px">Total</p></div><span style="flex:0 0 110px;font-size:17px;font-weight:500;text-align:right">${money(c.total)}</span><span class="badge" style="visibility:hidden">Paid</span></div></section>`
+      : `<div class="card"><p class="muted">Your trip costs will appear here once your trip is booked.</p></div>`);
 }
 
 function secEssentials() {

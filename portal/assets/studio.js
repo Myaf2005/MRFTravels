@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611172150";
+  CATEGORIES, KIND_TAG, BUCKET, toDate, costSummary, costOrder } from "./lib.js?v=202611172200";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -72,7 +72,7 @@ function gapsFor(t) {
     if (b.status === "Pending") add("confirm", KIND_NAME[b.kind] || "Booking", `Confirm ${b.name}`, "bookings");
     else if (!b.document_id) add("vouchers", KIND_NAME[b.kind] || "Booking", `Attach voucher for ${b.name}`, "bookings");
   });
-  by(S.D.payments, t.id).filter((p) => !p.received && p.due_date).forEach((p) => {
+  by(S.D.payments, t.id).filter((p) => !p.received && !p.paid_on_site && p.due_date).forEach((p) => {
     const d = daysUntil(p.due_date);
     const who = p.visible_to && p.visible_to.length ? ` · ${whoLabel(p.visible_to)}` : "";
     if (d < 0) add("payments", "Overdue", `${p.name} ${money(p.amount)} was due ${fmt(p.due_date)}${who}`, "costs", "warn", { days: d });
@@ -96,7 +96,7 @@ const allGaps = () => activeTrips().flatMap((t) => gapsFor(t).map((g) => ({ ...g
 function readiness(t) {
   const parts = [], b = by(S.D.bookings, t.id), p = by(S.D.payments, t.id), c = by(S.D.checklist, t.id);
   if (b.length) parts.push(b.filter((x) => x.status === "Confirmed" && x.document_id).length / b.length);
-  if (p.length) parts.push(p.filter((x) => x.received).length / p.length);
+  if (p.length) parts.push(p.filter((x) => x.received || x.paid_on_site).length / p.length);
   if (c.length) parts.push(c.filter((x) => x.done).length / c.length);
   parts.push(by(S.D.docs, t.id).some((d) => d.category === "client") ? 1 : 0);
   parts.push(by(S.D.items, t.id).length ? 1 : 0);
@@ -186,7 +186,7 @@ function vMissing(cat, gaps) {
   const trips = activeTrips().filter((t) => list.some((g) => g.tripId === t.id));
   let extra = "";
   if (cat === "payments") { // the rest of the schedule, for a full picture
-    const later = activeTrips().flatMap((t) => by(S.D.payments, t.id).filter((p) => !p.received && p.due_date && daysUntil(p.due_date) > 30).map((p) => ({ p, t })))
+    const later = activeTrips().flatMap((t) => by(S.D.payments, t.id).filter((p) => !p.received && !p.paid_on_site && p.due_date && daysUntil(p.due_date) > 30).map((p) => ({ p, t })))
       .sort((a, b) => a.p.due_date.localeCompare(b.p.due_date));
     extra = later.length ? `<section class="card"><h2 style="font-size:24px;margin-bottom:8px">Later payments</h2>${later.map(({ p, t }) => `<button class="rowbtn" type="button" data-act="open" data-v="${t.id}" data-tab="costs"><span class="badge muted">Upcoming</span>
       <span style="flex:1"><span class="nm" style="display:block;font-weight:400">${esc(p.name)} ${money(p.amount)} due ${esc(fmt(p.due_date))}${p.visible_to && p.visible_to.length ? " · " + esc(whoLabel(p.visible_to)) : ""}</span><span class="muted small">${esc(tripLabel(t))} · ${esc(t.title)}</span></span><span class="eyebrow" style="font-size:11px">Open →</span></button>`).join("")}</section>` : "";
@@ -288,25 +288,30 @@ const whoLabel = (vis, tripId) => !vis || !vis.length ? "Everyone on the trip" :
 function tCosts(t) {
   const people = clientsOf(t.id);
   if (S.costFor && !people.some((p) => p.id === S.costFor)) S.costFor = "";
-  const ps = by(S.D.payments, t.id).filter((p) => !S.costFor || seesItem(p.visible_to, S.costFor));
+  const ps = costOrder(by(S.D.payments, t.id).filter((p) => !S.costFor || seesItem(p.visible_to, S.costFor))), c = costSummary(ps);
   const forWho = people.length > 1 ? `<div class="field" style="max-width:360px;margin-bottom:14px"><label for="costFor">Show</label><select id="costFor" class="input" data-change="costFor">
       <option value="">All costs on this trip</option>${people.map((p) => `<option value="${p.id}" ${S.costFor === p.id ? "selected" : ""}>What ${esc(p.full_name)} sees</option>`).join("")}</select></div>` : "";
-  const total = ps.reduce((a, p) => a + Number(p.amount), 0), rec = ps.filter((p) => p.received).reduce((a, p) => a + Number(p.amount), 0);
-  return panel(`${forWho}<div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:12px"><div><span class="lbl">Total</span><p style="font-family:var(--display);font-size:32px">${money(total)}</p></div>
-      <div><span class="lbl">Received</span><p style="font-family:var(--display);font-size:32px;color:#BFE0DC">${money(rec)}</p></div><div><span class="lbl">Outstanding</span><p style="font-family:var(--display);font-size:32px;color:var(--gold)">${money(total - rec)}</p></div></div>
-    ${ps.length ? ps.map((p) => { const d = daysUntil(p.due_date), receipt = S.D.docs.find((x) => x.id === p.receipt_document_id); return `<div class="list-row">
-      <span style="flex:1 1 200px"><span style="display:block;font-weight:400">${esc(p.name)}</span><span class="muted small">${p.received ? "Was due" : "Due"} ${esc(fmt(p.due_date))}</span>
+  const num = (k, v, color = "") => `<div><span class="lbl">${k}</span><p style="font-family:var(--display);font-size:30px;${color}">${money(v)}</p></div>`;
+  return panel(`${forWho}<div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:6px">${num("Trip total", c.total)}${num("Paid", c.paid, "color:#BFE0DC")}${num("Left to pay", c.toPay, "color:var(--gold)")}${num("Paid at the destination", c.onSite)}</div>
+    <p class="muted small" style="margin-bottom:14px">${c.next ? `Next: ${esc(c.next.name)} · ${money(c.next.amount)} due ${esc(fmt(c.next.due_date))}` : "Nothing scheduled to pay before the trip."}</p>
+    <h3 style="font-size:22px;margin:6px 0 4px">What everything costs</h3>
+    ${ps.length ? ps.map((p) => { const d = daysUntil(p.due_date), receipt = S.D.docs.find((x) => x.id === p.receipt_document_id);
+      const badge = p.received ? `<span class="badge ok">Paid</span>` : p.paid_on_site ? `<span class="badge muted">At destination</span>` : d !== null && d < 0 ? `<span class="badge warn">Overdue</span>` : `<span class="badge wait">To pay</span>`;
+      return `<div class="list-row">
+      <span style="flex:1 1 220px"><span style="display:block;font-weight:400">${esc(p.name)}</span><span class="muted small">${p.due_date ? `${p.received ? "Was due" : "Due"} ${esc(fmt(p.due_date))}` : "No date"} · <button class="linkbtn" type="button" data-act="paySite" data-v="${p.id}">${p.paid_on_site ? "Paid at the destination ✓" : "Mark as paid at the destination"}</button></span>
         ${people.length > 1 || (p.visible_to && p.visible_to.length) ? `<span class="muted small" style="display:block">Seen by: ${esc(whoLabel(p.visible_to, t.id))} · <button class="linkbtn" type="button" data-act="payWho" data-v="${p.id}">Change</button></span>` : ""}</span>
-      <span style="flex:0 0 90px">${money(p.amount)}</span><span class="badge ${p.received ? "ok" : d !== null && d < 0 ? "warn" : "wait"}">${p.received ? "Received" : d !== null && d < 0 ? "Overdue" : "Upcoming"}</span>
-      <button class="btn line sm" type="button" data-act="togglePay" data-v="${p.id}">${p.received ? "Undo" : "Mark received"}</button>
+      <span style="flex:0 0 90px">${money(p.amount)}</span>${badge}
+      <button class="btn line sm" type="button" data-act="togglePay" data-v="${p.id}">${p.received ? "Undo" : "Mark paid"}</button>
       ${receipt ? `<button class="linkbtn" type="button" data-act="doc" data-v="${receipt.id}">Receipt</button>` : p.received ? `<label class="upload" style="min-height:36px;padding:6px 12px;font-size:11px">Attach receipt<input type="file" accept=".pdf,.jpg,.jpeg,.png" data-change="receipt" data-v="${p.id}"></label>` : ""}
-      <button class="del" type="button" data-act="del" data-t="payments" data-v="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button></div>`; }).join("") : `<p class="muted">No payment schedule yet.</p>`}`,
-    `<form data-form="payment"><h3 style="font-size:22px">Add to the schedule</h3>${fld("name", "Name", 'required placeholder="Final balance"')}
-      <div class="row2">${fld("amount", "Amount ($)", 'required min="0" step="0.01"', "number")}${fld("due_date", "Due date", "required", "date")}</div>
+      <button class="del" type="button" data-act="del" data-t="payments" data-v="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button></div>`; }).join("") : `<p class="muted">No costs yet.</p>`}`,
+    `<form data-form="payment"><h3 style="font-size:22px">Add a cost</h3>${fld("name", "What it is", 'required placeholder="Hotel Waldhaus am See · 2 nights"')}
+      <div class="row2">${fld("amount", "Amount ($)", 'required min="0" step="0.01"', "number")}${fld("due_date", "Due date (optional)", "", "date")}</div>
+      <label class="check" style="display:flex;margin-top:12px"><input type="checkbox" name="on_site"> Paid at the destination (cash on the day, on board, on arrival)</label>
+      <label class="check" style="display:flex;margin-top:6px"><input type="checkbox" name="already_paid"> Already paid</label>
       ${people.length > 1 ? `<fieldset style="border:0;padding:0;margin:14px 0 0"><legend class="lbl">Who sees this cost?</legend><p class="muted small" style="margin:2px 0 6px">Tick the travelers it belongs to (both partners for a couple). Leave all unticked for a shared cost everyone sees.</p>
         ${people.map((p) => `<label class="check" style="display:flex;margin:4px 0"><input type="checkbox" name="who" value="${p.id}" ${S.costFor === p.id ? "checked" : ""}> ${esc(p.full_name)}</label>`).join("")}</fieldset>` : ""}
       <button class="btn sm" type="submit" style="margin-top:14px">Add</button></form>
-    <p class="muted small">Clients only see this as a record. When a payment arrives, mark it received and attach the receipt. It shows up in their Documents too, only for the people who see that cost.</p>`);
+    <p class="muted small">Every trip shows clients the same summary: trip total, paid, left to pay and paid at the destination, then this itemized list. Mark costs paid as money arrives and attach the receipt; it shows up in their Documents too, only for the people who see that cost.</p>`);
 }
 
 function tUpdates(t) {
@@ -500,6 +505,7 @@ document.addEventListener("click", async (e) => {
     try { await callAccounts({ action: "remove", user_id: v }); await loadAll(); render(); toast("Login removed."); } catch (err) { toast(err.message); }
     return;
   }
+  if (act === "paySite") { const p = S.D.payments.find((x) => x.id === v); if (!p) return; return run(sb.from("payments").update({ paid_on_site: !p.paid_on_site }).eq("id", v), p.paid_on_site ? "Now counted as paid before the trip." : "Marked as paid at the destination."); }
   if (act === "payWho") {
     const p = S.D.payments.find((x) => x.id === v); if (!p) return;
     const who = await chooseWho(p.trip_id, p.visible_to || [], p.name);
@@ -579,7 +585,7 @@ document.addEventListener("submit", async (e) => {
   if (form === "booking") return run(sb.from("bookings").insert({ trip_id: t, kind: val("kind"), status: val("status"), name: val("name"), details: val("details"), confirmation_no: val("confirmation_no"), sort: by(S.D.bookings, t).length }), "Reservation added.");
   if (form === "payment") {
     const who = Array.from(f.querySelectorAll('input[name="who"]:checked')).map((x) => x.value);
-    return run(sb.from("payments").insert({ trip_id: t, name: val("name"), amount: Number(val("amount")), due_date: val("due_date"), sort: by(S.D.payments, t).length, visible_to: who.length ? who : null }),
+    return run(sb.from("payments").insert({ trip_id: t, name: val("name"), amount: Number(val("amount")), due_date: val("due_date") || null, sort: by(S.D.payments, t).length, visible_to: who.length ? who : null, paid_on_site: !!f.on_site?.checked, received: !!f.already_paid?.checked }),
       who.length ? `Added. Only ${whoLabel(who, t)} will see it.` : "Added to the schedule.");
   }
   if (form === "update") return run(sb.from("updates").insert({ trip_id: t, kind: val("kind"), body: val("body"), link_section: val("link_section") || null, link_document_id: val("link_document_id") || null }), "Posted. It's in their Updates & reminders now.");
