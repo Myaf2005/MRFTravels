@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611172135";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611172140";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -61,25 +61,38 @@ async function run(promise, okMsg) {
 }
 
 // ---------------- what's missing ----------------
+// Everything still missing, sorted into dedicated pages (cat).
 function gapsFor(t) {
-  const g = [], add = (kind, text, tab, badge = "wait") => g.push({ kind, text, tab, badge, tripId: t.id });
+  const g = [], add = (cat, kind, text, tab, badge = "wait", extra = {}) => g.push({ cat, kind, text, tab, badge, tripId: t.id, ...extra });
   if (t.status === "Complete") return g;
   const people = clientsOf(t.id);
-  if (!people.length) add("Login", "No client login yet", "people", "muted");
-  people.filter((p) => p.must_set_login).forEach((p) => add("Login", `${p.full_name} hasn't signed in yet`, "people", "muted"));
+  if (!people.length) add("logins", "No login", "No client login yet", "people", "muted");
+  people.filter((p) => p.must_set_login).forEach((p) => add("logins", "Invited", `${p.full_name} hasn't signed in yet`, "people", "muted", { personId: p.id }));
   by(S.D.bookings, t.id).forEach((b) => {
-    if (b.status === "Pending") add("Confirm", `Confirm ${b.name}`, "bookings");
-    else if (!b.document_id) add("Voucher", `Attach voucher for ${b.name}`, "bookings");
+    if (b.status === "Pending") add("confirm", KIND_NAME[b.kind] || "Booking", `Confirm ${b.name}`, "bookings");
+    else if (!b.document_id) add("vouchers", KIND_NAME[b.kind] || "Booking", `Attach voucher for ${b.name}`, "bookings");
   });
   by(S.D.payments, t.id).filter((p) => !p.received && p.due_date).forEach((p) => {
     const d = daysUntil(p.due_date);
-    if (d < 0) add("Overdue", `${p.name} ${money(p.amount)} was due ${fmt(p.due_date)}`, "costs", "warn");
-    else if (d <= 30) add("Payment", `${p.name} ${money(p.amount)} due ${fmt(p.due_date)}`, "costs");
+    const who = p.visible_to && p.visible_to.length ? ` · ${whoLabel(p.visible_to)}` : "";
+    if (d < 0) add("payments", "Overdue", `${p.name} ${money(p.amount)} was due ${fmt(p.due_date)}${who}`, "costs", "warn", { days: d });
+    else if (d <= 30) add("payments", d <= 7 ? "This week" : "Due soon", `${p.name} ${money(p.amount)} due ${fmt(p.due_date)}${who}`, "costs", d <= 7 ? "warn" : "wait", { days: d });
   });
-  if (people.length && !by(S.D.docs, t.id).some((d) => d.category === "client")) add("Docs", "Waiting on passport copies", "documents", "muted");
-  if (!by(S.D.items, t.id).length) add("Itinerary", "Itinerary has no plans yet", "itinerary", "muted");
+  const clientDocs = by(S.D.docs, t.id).filter((d) => d.category === "client");
+  people.filter((p) => !clientDocs.some((d) => d.uploaded_by === p.id)).forEach((p) => add("docs", "Passport", `${p.full_name} hasn't uploaded documents yet`, "documents", "muted", { personId: p.id }));
+  if (!by(S.D.items, t.id).length) add("itinerary", "Itinerary", "No day-by-day plans yet", "itinerary", "muted");
   return g;
 }
+const KIND_NAME = { flight: "Flight", hotel: "Hotel", transfer: "Transfer", experience: "Experience", other: "Booking" };
+const MISSING = [
+  ["payments", "Payments due", "Overdue and due in the next 30 days. Later payments are listed underneath."],
+  ["confirm", "To confirm", "Reservations still marked Pending."],
+  ["vouchers", "Vouchers to attach", "Confirmed reservations without their confirmation document."],
+  ["logins", "Client logins", "Travelers who haven't signed in yet, and trips with no login."],
+  ["docs", "Passports & documents", "Travelers who haven't uploaded anything to Your documents yet."],
+  ["itinerary", "Itineraries", "Trips with no day-by-day plans yet."],
+];
+const allGaps = () => activeTrips().flatMap((t) => gapsFor(t).map((g) => ({ ...g, trip: t })));
 function readiness(t) {
   const parts = [], b = by(S.D.bookings, t.id), p = by(S.D.payments, t.id), c = by(S.D.checklist, t.id);
   if (b.length) parts.push(b.filter((x) => x.status === "Confirmed" && x.document_id).length / b.length);
@@ -126,14 +139,16 @@ function vVerify() {
 }
 
 function vStudio() {
-  const gaps = activeTrips().flatMap((t) => gapsFor(t).map((g) => ({ ...g, trip: t })));
+  const gaps = allGaps();
   const openTasks = S.D.tasks.filter((k) => !k.done).length;
   const navBtn = (k, l, n) => `<button class="nav" type="button" data-act="view" data-v="${k}" ${S.view === k || (k === "trips" && S.view === "trip") ? 'aria-current="page"' : ""}>${l}${n ? `<span class="count">${n}</span>` : ""}</button>`;
-  const body = { dashboard: () => vDashboard(gaps, openTasks), trips: vTrips, trip: vTrip, invite: vInvite, todo: vTodo }[S.view]();
+  const body = S.view.startsWith("m-") ? vMissing(S.view.slice(2), gaps) : { dashboard: () => vDashboard(gaps, openTasks), trips: vTrips, trip: vTrip, invite: vInvite, todo: vTodo }[S.view]();
+  const cnt = (c) => gaps.filter((g) => g.cat === c).length;
   return `<header class="top"><div class="in">${BRAND}<div class="r">
       <button class="btn line sm" type="button" data-act="viewAs">View as client</button><span>Mya Ferrera</span>
       <button class="btn line sm" type="button" data-act="signout">Sign out</button></div></div></header>
-    <div class="shell"><nav class="side" aria-label="Studio">${navBtn("dashboard", "Dashboard", gaps.length)}${navBtn("trips", "Clients &amp; trips", activeTrips().length)}${navBtn("invite", "Invite a client")}${navBtn("todo", "My to-do", openTasks)}</nav>
+    <div class="shell"><nav class="side" aria-label="Studio">${navBtn("dashboard", "Dashboard")}${navBtn("trips", "Clients &amp; trips", activeTrips().length)}${navBtn("invite", "Invite a client")}${navBtn("todo", "My to-do", openTasks)}
+      <p class="nav-h">Still missing</p>${MISSING.map(([c, l]) => navBtn("m-" + c, l, cnt(c))).join("")}</nav>
     <main class="main">${body}</main></div>`;
 }
 
@@ -144,17 +159,45 @@ function vDashboard(gaps, openTasks) {
   const upcoming = activeTrips().filter((t) => t.end_date ? daysUntil(t.end_date) >= 0 : true).slice(0, 5);
   const soon = activeTrips().filter((t) => { const d = daysUntil(t.start_date); return d !== null && d >= 0 && d <= 60; }).length;
   const stat = (k, n, v) => `<button class="card stat" type="button" data-act="view" data-v="${v}"><span class="k">${k}</span><span class="n">${n}</span></button>`;
+  // urgent: money overdue or due within 7 days, and anything unconfirmed/voucherless on trips leaving within 30 days
+  const leavingSoon = (g) => { const d = daysUntil(g.trip.start_date); return d !== null && d >= 0 && d <= 30; };
+  const urgent = gaps.filter((g) => (g.cat === "payments" && g.days <= 7) || ((g.cat === "confirm" || g.cat === "vouchers") && leavingSoon(g)))
+    .sort((a, b) => (a.days ?? 99) - (b.days ?? 99)).slice(0, 8);
+  const tile = ([c, l]) => { const list = gaps.filter((g) => g.cat === c);
+    return `<button class="card stat mtile" type="button" data-act="view" data-v="m-${c}"><span class="k">${l}</span><span class="n" style="${list.length ? "" : "color:var(--muted)"}">${list.length}</span>
+      <span class="muted small">${list.length ? esc(list[0].text) + (list.length > 1 ? ` + ${list.length - 1} more` : "") : "All done"}</span><span class="eyebrow" style="font-size:11px;margin-top:auto">View all →</span></button>`; };
   return h(TODAY().toUpperCase(), "Here's where everything stands") +
-    `<div class="grid">${stat("Active trips", activeTrips().length, "trips")}${stat("Departing in 60 days", soon, "trips")}${stat("Things missing", gaps.length, "dashboard")}${stat("Open to-dos", openTasks, "todo")}</div>
-    <div class="split"><section class="card a"><h2 style="font-size:28px">What's still missing</h2><p class="muted small" style="margin:4px 0 12px">Worked out automatically from every trip. Click one to jump to it.</p>
-      ${gaps.length ? gaps.map((g) => `<button class="rowbtn" type="button" data-act="open" data-v="${g.tripId}" data-tab="${g.tab}"><span class="badge ${g.badge}">${g.kind}</span>
-        <span style="flex:1"><span class="nm" style="display:block;font-weight:400">${esc(g.text)}</span><span class="muted small">${esc(tripLabel(g.trip))} · ${esc(g.trip.title)}</span></span><span class="eyebrow" style="font-size:11px">Open →</span></button>`).join("") : `<p class="empty">Nothing missing. Every trip is in order.</p>`}</section>
+    `<div class="grid">${stat("Active trips", activeTrips().length, "trips")}${stat("Departing in 60 days", soon, "trips")}${stat("Open to-dos", openTasks, "todo")}</div>
+    <section><h2 style="font-size:28px;margin-bottom:12px">Still missing</h2><div class="grid mgrid">${MISSING.map(tile).join("")}</div></section>
+    <div class="split"><section class="card a"><h2 style="font-size:28px">Needs attention this week</h2><p class="muted small" style="margin:4px 0 12px">Payments overdue or due within 7 days, and anything unconfirmed on trips leaving within 30 days.</p>
+      ${urgent.length ? urgent.map(gapRow).join("") : `<p class="empty">Nothing urgent. Enjoy the calm.</p>`}</section>
     <section class="card b"><h2 style="font-size:28px;margin-bottom:12px">Next departures</h2>
       ${upcoming.length ? upcoming.map((t) => { const d = daysUntil(t.start_date); return `<button class="rowbtn" type="button" data-act="open" data-v="${t.id}">
         <span class="datebox"><b style="color:var(--gold)">${d === null ? "—" : Math.max(0, d)}</b><small>DAYS</small></span>
         <span><span class="nm" style="display:block;font-weight:400">${esc(tripLabel(t))}</span><span class="muted small">${esc(t.title)}</span></span></button>`; }).join("") : `<p class="empty">No trips yet. <button class="linkbtn" type="button" data-act="view" data-v="invite">Invite your first client</button></p>`}</section></div>`;
 }
+const gapRow = (g, showTrip = true) => `<button class="rowbtn" type="button" data-act="open" data-v="${g.tripId}" data-tab="${g.tab}"><span class="badge ${g.badge}">${esc(g.kind)}</span>
+  <span style="flex:1"><span class="nm" style="display:block;font-weight:400">${esc(g.text)}</span>${showTrip ? `<span class="muted small">${esc(tripLabel(g.trip))} · ${esc(g.trip.title)}</span>` : ""}</span><span class="eyebrow" style="font-size:11px">Open →</span></button>`;
 
+// one dedicated page per kind of missing thing, grouped by trip
+function vMissing(cat, gaps) {
+  const meta = MISSING.find(([c]) => c === cat); if (!meta) { S.view = "dashboard"; return vDashboard(gaps, 0); }
+  const list = gaps.filter((g) => g.cat === cat);
+  const trips = activeTrips().filter((t) => list.some((g) => g.tripId === t.id));
+  let extra = "";
+  if (cat === "payments") { // the rest of the schedule, for a full picture
+    const later = activeTrips().flatMap((t) => by(S.D.payments, t.id).filter((p) => !p.received && p.due_date && daysUntil(p.due_date) > 30).map((p) => ({ p, t })))
+      .sort((a, b) => a.p.due_date.localeCompare(b.p.due_date));
+    extra = later.length ? `<section class="card"><h2 style="font-size:24px;margin-bottom:8px">Later payments</h2>${later.map(({ p, t }) => `<button class="rowbtn" type="button" data-act="open" data-v="${t.id}" data-tab="costs"><span class="badge muted">Upcoming</span>
+      <span style="flex:1"><span class="nm" style="display:block;font-weight:400">${esc(p.name)} ${money(p.amount)} due ${esc(fmt(p.due_date))}${p.visible_to && p.visible_to.length ? " · " + esc(whoLabel(p.visible_to)) : ""}</span><span class="muted small">${esc(tripLabel(t))} · ${esc(t.title)}</span></span><span class="eyebrow" style="font-size:11px">Open →</span></button>`).join("")}</section>` : "";
+  }
+  return h("Still missing", meta[1], "", meta[2]) +
+    (trips.length ? trips.map((t) => { const rows = list.filter((g) => g.tripId === t.id);
+      return `<section class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px">
+        <h2 style="font-size:24px">${esc(tripLabel(t))} <span class="muted" style="font-size:16px">· ${esc(t.title)}</span></h2><span class="muted small">${rows.length} item${rows.length === 1 ? "" : "s"} · ${esc(dates(t))}</span></div>
+        ${rows.map((g) => gapRow(g, false)).join("")}</section>`; }).join("")
+      : `<div class="card"><p class="empty">Nothing here. Every trip is in order.</p></div>`) + extra;
+}
 function vTrips() {
   const list = [...S.D.trips].sort((a, b) => (a.status === "Complete") - (b.status === "Complete") || (a.start_date || "9").localeCompare(b.start_date || "9"));
   return h("Clients &amp; trips", "Every journey in motion", `<button class="btn" type="button" data-act="view" data-v="invite">Invite a client</button>`) +
