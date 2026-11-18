@@ -658,21 +658,47 @@ async function mountMap(){
   const photo = p => `<div class="mph"><img src="${esc(p.img)}" alt="${esc(p.n)}"></div>` + (p.cr ? `<div class="mcr">Photo: <a href="https://unsplash.com/@${esc(p.cr)}?utm_source=mrftravels&utm_medium=referral" target="_blank" rel="noopener">@${esc(p.cr)}</a></div>` : "");
   const svg = d3.select(box), proj = d3.geoNaturalEarth1().fitExtent([[8,8],[952,492]],{type:"Sphere"}), path = d3.geoPath(proj);
   const regionOf = {}; PLACES.forEach(p=>{ if(p.m) regionOf[p.m] = p.k; });
-  svg.append("path").attr("class","msph").attr("d", path({type:"Sphere"}));
-  const cs = svg.append("g").selectAll("path").data(world.features).join("path").attr("class","mc").attr("d", path);
-  let sel = "All", cur = null;
-  const pts = PLACES.map(p=>({p, xy: proj([p.lon,p.lat])})), shown = ()=>pts.filter(o=>sel==="All"||o.p.k===sel);
-  const g = svg.append("g").selectAll("g").data(pts).join("g").attr("class","mpin").attr("tabindex",0).attr("role","button").attr("aria-label",d=>d.p.n).attr("transform",d=>`translate(${d.xy})`);
+  const zg = svg.append("g");
+  zg.append("path").attr("class","msph").attr("d", path({type:"Sphere"})).attr("vector-effect","non-scaling-stroke");
+  const cs = zg.append("g").selectAll("path").data(world.features).join("path").attr("class","mc").attr("d", path).attr("vector-effect","non-scaling-stroke");
+  let sel = "All", cur = null, zk = 1, zx = 0, zy = 0;
+  const pts = PLACES.map(p=>({p, xy: proj([p.lon,p.lat])})).sort((a,b)=>a.p.n.localeCompare(b.p.n)), shown = ()=>pts.filter(o=>sel==="All"||o.p.k===sel);
+  const g = zg.append("g").selectAll("g").data(pts).join("g").attr("class","mpin").attr("tabindex",0).attr("role","button").attr("aria-label",d=>d.p.n).attr("transform",d=>`translate(${d.xy})`);
   g.append("circle").attr("class","h").attr("r",8); g.append("circle").attr("class","d").attr("r",3.6);
   const tip = document.getElementById("mtip"), jump = document.getElementById("mjump");
-  const tipAt = o=>{ const s = box.getBoundingClientRect().width/960; tip.textContent = o.p.n; tip.style.left = o.xy[0]*s+"px"; tip.style.top = o.xy[1]*s+"px"; tip.classList.add("show"); };
+  const tipAt = o=>{ const s = box.getBoundingClientRect().width/960; tip.textContent = o.p.n; tip.style.left = (o.xy[0]*zk+zx)*s+"px"; tip.style.top = (o.xy[1]*zk+zy)*s+"px"; tip.classList.add("show"); };
+  /* zoom the map to the chosen region: fit the region's pins and visited countries, with padding and a sensible zoom limit */
+  const zoomTo = ()=>{
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+    const add = ([[a,b],[c,d]])=>{ x0=Math.min(x0,a); y0=Math.min(y0,b); x1=Math.max(x1,c); y1=Math.max(y1,d); };
+    if(sel !== "All"){
+      shown().forEach(o=>add([o.xy,o.xy]));
+      world.features.forEach(f=>{ if(regionOf[f.properties.name]!==sel) return;
+        /* use the country's main landmass only, so overseas territories (e.g. French Guiana) don't stretch the view */
+        let shape = f;
+        if(f.geometry.type==="MultiPolygon") shape = f.geometry.coordinates.map(c=>({type:"Polygon",coordinates:c})).sort((a,b)=>path.area(b)-path.area(a))[0];
+        const b = path.bounds(shape); if(b[1][0]-b[0][0] < 400) add(b); });
+    }
+    let k = 1, tx = 0, ty = 0;
+    if(isFinite(x0)){
+      const minW = 150, minH = 90, cx = (x0+x1)/2, cy = (y0+y1)/2;
+      const w = Math.max(x1-x0, minW)*1.25, hh = Math.max(y1-y0, minH)*1.25;
+      k = Math.min(960/w, 500/hh, 7);
+      tx = 480 - cx*k; ty = 250 - cy*k;
+      tx = Math.min(0, Math.max(960 - 960*k, tx)); ty = Math.min(0, Math.max(500 - 500*k, ty));
+    }
+    zk = k; zx = tx; zy = ty; tip.classList.remove("show");
+    const t = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 750;
+    zg.transition().duration(t).ease(d3.easeCubicInOut).attr("transform", `translate(${tx},${ty}) scale(${k})`);
+    g.transition().duration(t).ease(d3.easeCubicInOut).attr("transform", d=>`translate(${d.xy}) scale(${1/k})`);
+  };
   const fill = ()=>{ jump.innerHTML = shown().map(o=>`<option>${esc(o.p.n)}</option>`).join(""); if(cur) jump.value = cur.p.n; };
   const show = o=>{ cur = o; g.classed("active", d=>d===o); [["mk",o.p.k],["mp",o.p.n],["mr",o.p.k!==o.p.r?o.p.r:""],["ms",o.p.s]].forEach(([id,v])=>document.getElementById(id).textContent=v); document.getElementById("mphoto").innerHTML = photo(o.p); jump.value = o.p.n; };
   const paint = ()=>{ const s = new Set(shown()); cs.classed("on", d=>{ const k = regionOf[d.properties.name]; return !!k && (sel==="All"||k===sel); }); g.attr("display", d=>s.has(d)?null:"none"); const ps = shown().map(o=>o.p); document.getElementById("mn-c").textContent = ps.length; document.getElementById("mn-k").textContent = new Set(ps.map(p=>p.r)).size; };
   g.on("click",(e,d)=>show(d)).on("mouseenter",(e,d)=>tipAt(d)).on("mouseleave",()=>tip.classList.remove("show")).on("keydown",(e,d)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); show(d); } });
   jump.onchange = ()=>show(pts.find(o=>o.p.n===jump.value));
   const chips = document.getElementById("map-chips");
-  ["All", ...new Set(PLACES.map(p=>p.k))].forEach(r=>{ const b = document.createElement("button"); b.type="button"; b.textContent = r; b.setAttribute("aria-pressed", r===sel); b.onclick = ()=>{ sel = r; chips.querySelectorAll("button").forEach(c=>c.setAttribute("aria-pressed", c.textContent===r)); fill(); if(!shown().includes(cur)) show(shown()[0]); paint(); }; chips.appendChild(b); });
+  ["All", ...new Set(PLACES.map(p=>p.k))].forEach(r=>{ const b = document.createElement("button"); b.type="button"; b.textContent = r; b.setAttribute("aria-pressed", r===sel); b.onclick = ()=>{ sel = r; chips.querySelectorAll("button").forEach(c=>c.setAttribute("aria-pressed", c.textContent===r)); fill(); if(!shown().includes(cur)) show(shown()[0]); paint(); zoomTo(); }; chips.appendChild(b); });
   fill(); paint(); show(pts.find(o=>o.p.n==="Greece") || pts[0]);
 }
 function inline(s){
