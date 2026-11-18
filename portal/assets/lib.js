@@ -43,7 +43,7 @@ export const toDate = (iso) => { if (!iso) return null; const [y, m, d] = String
 export const fmt = (iso, opts = { month: "short", day: "numeric", year: "numeric" }) => (iso ? toDate(iso).toLocaleDateString("en-US", opts) : "");
 export const fmtLong = (iso) => fmt(iso, { month: "long", day: "numeric", year: "numeric" });
 export const daysUntil = (iso) => { if (!iso) return null; const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((toDate(iso) - t) / 86400000); };
-export const money = (n) => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+export const money = (n) => { const v = Number(n || 0), whole = Number.isInteger(Math.round(v * 100) / 100); return "$" + v.toLocaleString("en-US", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 }); };
 export const initials = (name) => (name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 export const safeName = (n) => n.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.-]+/g, "-").slice(-80);
 export const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
