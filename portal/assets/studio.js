@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate, costSummary, costOrder } from "./lib.js?v=202611172210";
+  CATEGORIES, KIND_TAG, BUCKET, toDate, costSummary, costOrder } from "./lib.js?v=202611172230";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -274,8 +274,10 @@ function tBookings(t) {
 
 function tDocuments(t) {
   const docs = by(S.D.docs, t.id);
-  const row = (x, canDel) => `<div class="list-row" style="padding:10px 0"><button class="linkbtn" type="button" data-act="doc" data-v="${x.id}" style="flex:1;text-align:left;color:var(--ink)">${esc(x.title)}</button>
-      ${canDel ? `<button class="del" type="button" data-act="delDoc" data-v="${x.id}" aria-label="Remove ${esc(x.title)}">Remove</button>` : ""}</div>`;
+  const row = (x, canDel) => `<div class="list-row" style="padding:10px 0;flex-wrap:wrap"><button class="linkbtn" type="button" data-act="doc" data-v="${x.id}" style="flex:1 1 200px;text-align:left;color:var(--ink)">${esc(x.title)}</button>
+      ${x.is_itinerary ? `<span class="badge ok">Itinerary download</span>` : ""}
+      ${canDel ? `<button class="linkbtn" type="button" data-act="itinDoc" data-v="${x.id}" style="font-size:12px">${x.is_itinerary ? "Stop using as itinerary" : "Use as itinerary download"}</button>
+      <button class="del" type="button" data-act="delDoc" data-v="${x.id}" aria-label="Remove ${esc(x.title)}">Remove</button>` : ""}</div>`;
   return `<div class="grid wide">${CATEGORIES.map(([k, title]) => `<section class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="font-size:22px">${title}</h3>
       <label class="upload" style="min-height:40px;padding:8px 14px;font-size:11px">Upload<input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.heic,.webp" data-change="docs" data-v="${k}"></label></div>
       ${docs.filter((x) => x.category === k).map((x) => row(x, true)).join("") || `<p class="empty">Nothing yet.</p>`}</section>`).join("")}
@@ -504,6 +506,13 @@ document.addEventListener("click", async (e) => {
     if (!(await askConfirm(`${p.full_name} won't be able to sign in anymore. Their trips and documents stay.`, { title: "Remove this login?", ok: "Remove login", danger: true }))) return;
     try { await callAccounts({ action: "remove", user_id: v }); await loadAll(); render(); toast("Login removed."); } catch (err) { toast(err.message); }
     return;
+  }
+  if (act === "itinDoc") {
+    const d = S.D.docs.find((x) => x.id === v); if (!d) return;
+    if (d.is_itinerary) return run(sb.from("documents").update({ is_itinerary: false }).eq("id", v), "The Download itinerary button is back to the printable version.");
+    const { error } = await sb.from("documents").update({ is_itinerary: false }).eq("trip_id", d.trip_id).eq("is_itinerary", true);
+    if (error) return toast(error.message);
+    return run(sb.from("documents").update({ is_itinerary: true }).eq("id", v), `Clients now download "${d.title}" from Download itinerary.`);
   }
   if (act === "paySite") { const p = S.D.payments.find((x) => x.id === v); if (!p) return; return run(sb.from("payments").update({ paid_on_site: !p.paid_on_site }).eq("id", v), p.paid_on_site ? "Now counted as paid before the trip." : "Marked as paid at the destination."); }
   if (act === "payWho") {

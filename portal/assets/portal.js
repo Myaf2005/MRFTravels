@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote, costSummary, costOrder } from "./lib.js?v=202611172210";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote, costSummary, costOrder } from "./lib.js?v=202611172230";
 
 const app = $("#app");
 const S = {
@@ -385,6 +385,16 @@ function itineraryDoc(coverPhoto) {
 }
 
 async function makePdf() {
+  // a designed itinerary PDF flagged in the Studio wins; otherwise build the printable keepsake
+  const designed = S.d.docs.find((x) => x.is_itinerary);
+  if (designed) {
+    const ext = (designed.storage_path.match(/\.[a-z0-9]+$/i) || [".pdf"])[0];
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(designed.storage_path, 600, { download: `${designed.title.replace(/[\\/:*?"<>|]+/g, "").trim() || "MRF Travels Itinerary"}${designed.title.toLowerCase().endsWith(ext.toLowerCase()) ? "" : ext}` });
+    if (!error && data?.signedUrl) {
+      const a = document.createElement("a"); a.href = data.signedUrl; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
+      return toast("Downloading your itinerary.");
+    }
+  }
   let root = document.getElementById("print-root");
   if (!root) { root = document.createElement("div"); root.id = "print-root"; document.body.appendChild(root); }
   const cover = nextCoverPhoto();
