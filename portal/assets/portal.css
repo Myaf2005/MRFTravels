@@ -264,7 +264,7 @@ body.studio .toast{background:#D3B47E;color:#14110B}
 .chooser .ch-h{font-family:"Jost",sans-serif;font-weight:500;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#8A6A38;margin:18px 0 4px}
 .trip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
 .trip-card{position:relative;min-height:380px;border:0;padding:0;cursor:pointer;text-align:left;color:#FBF8F2;background-color:#0C343A;overflow:hidden;display:flex;align-items:flex-end;font:inherit;transition:transform .25s ease,box-shadow .25s ease}
-.trip-card::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,52,58,.05) 30%,rgba(12,52,58,.88) 100%)}
+.trip-card::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,52,58,.12) 0%,rgba(12,52,58,.55) 45%,rgba(12,52,58,.92) 100%)}
 .trip-card:hover,.trip-card:focus-visible{transform:translateY(-3px);box-shadow:0 18px 40px rgba(12,52,58,.25)}
 .trip-card:focus-visible{outline:2px solid #D3B47E;outline-offset:3px}
 .trip-card .tc-in{position:relative;display:flex;flex-direction:column;gap:8px;padding:26px}
