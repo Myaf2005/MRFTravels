@@ -232,3 +232,17 @@ export function costOrder(ps) {
   const rank = (p) => (p.received ? 2 : p.paid_on_site ? 1 : 0);
   return [...ps].sort((a, b) => rank(a) - rank(b) || (a.due_date || "9999").localeCompare(b.due_date || "9999") || (a.sort || 0) - (b.sort || 0));
 }
+
+// show / hide typed passwords (eye button next to every password box)
+if (!window.__mrfPwEye) {
+  window.__mrfPwEye = true;
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest(".pw-eye"); if (!b) return;
+    const input = b.parentElement.querySelector("input"); if (!input) return;
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    b.setAttribute("aria-pressed", String(show));
+    b.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    input.focus({ preventScroll: true });
+  });
+}

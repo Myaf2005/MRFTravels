@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate, costSummary, costOrder } from "./lib.js?v=202611181830";
+  CATEGORIES, KIND_TAG, BUCKET, toDate, costSummary, costOrder } from "./lib.js?v=202611181840";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -116,7 +116,7 @@ function vSignIn() {
   return `<div class="centered"><form class="panel-card" id="f-signin" novalidate>${BRAND}
     <h1 style="font-size:38px">Welcome back, Mya</h1>
     <div class="field"><label for="e">Email</label><input class="input" id="e" name="e" type="email" autocomplete="username" required></div>
-    <div class="field"><label for="p">Password</label><input class="input" id="p" name="p" type="password" autocomplete="current-password" required></div>
+    <div class="field"><label for="p">Password</label><span class="pw-wrap"><input class="input" id="p" name="p" type="password" autocomplete="current-password" required><button class="pw-eye" type="button" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg></button></span></div>
     ${alertBox()}<button class="btn" type="submit" ${S.busy ? "disabled" : ""}>${S.busy ? "Signing in…" : "Continue"}</button>
     <p class="muted small">Clients sign in at <a href="../">mrftravels.com/portal</a>.</p></form></div>`;
 }

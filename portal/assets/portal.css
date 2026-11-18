@@ -287,3 +287,12 @@ body.studio .toast{background:#D3B47E;color:#14110B}
 .cost-n.due b{color:#8A6A38}
 .cost-total{border-top:1px solid var(--line);margin-top:4px}
 @media (max-width:760px){.cost-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* show/hide password */
+.pw-wrap{position:relative;display:block}
+.pw-wrap .input{padding-right:52px;width:100%}
+.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;display:grid;place-items:center;background:none;border:0;cursor:pointer;color:var(--muted,#6b6b6b)}
+.pw-eye:hover,.pw-eye:focus-visible{color:var(--gold,#8A6A38)}
+.pw-eye:focus-visible{outline:2px solid #D3B47E;outline-offset:-2px}
+.pw-eye .slash{display:none}
+.pw-eye[aria-pressed="false"] .slash{display:inline}
+.pw-wrap input::-ms-reveal{display:none}
