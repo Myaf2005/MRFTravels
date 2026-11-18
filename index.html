@@ -214,6 +214,21 @@ section{padding-block:96px}
 .sig{font-family:var(--display);font-style:italic;font-size:30px;color:var(--ink)}
 @media (max-width:820px){.about .wrap{grid-template-columns:1fr;gap:36px}.about .slot{max-width:440px}}
 
+/* inquiry: optional label, booking step */
+.inquire .opt{text-transform:none;letter-spacing:0;color:var(--muted)}
+.booking{scroll-margin-top:110px}
+.booking h3{font-family:var(--display);font-weight:400;font-size:28px;margin:12px 0 20px}
+.booking iframe{display:block;width:100%;height:700px;border:0;background:var(--surface)}
+@media (max-width:700px){.booking iframe{height:900px}}
+
+/* meet mya (home) */
+.meet .wrap{display:flex;align-items:center;justify-content:center;gap:56px}
+.meet-photo{display:block;flex:0 0 260px;text-decoration:none}
+.meet-photo .slot{aspect-ratio:4/5;margin:0}
+.meet-r .label{margin-bottom:20px}
+.meet-btns{display:flex;gap:16px;flex-wrap:wrap}
+@media (max-width:700px){.meet .wrap{flex-direction:column;align-items:flex-start;gap:28px}.meet-photo{flex:none;width:min(100%,320px)}.meet-photo{align-self:center}.meet .wrap{align-items:stretch}.meet-r{width:100%}.meet-btns{flex-direction:column}.meet-btns .btn{text-align:center}}
+
 /* inquiry */
 .inquire{background:var(--surface);border-top:1px solid var(--line)}
 .inquire .wrap{display:grid;grid-template-columns:1fr 1.3fr;gap:72px}
@@ -323,7 +338,7 @@ body.editing{padding-bottom:84px}
   "signature": "MRF",
   "inquireLabel": "Inquire",
   "inquireTitle": "Let's plan *your next journey.*",
-  "inquireText": "Tell me a little about the trip you have in mind. I'll reply within two business days to schedule your consultation.",
+  "inquireText": "Tell me a little about the trip you have in mind. I'll reply within 24 hours to schedule your consultation.",
   "email": "hello@mrftravels.com",
   "phone": "(786) 287-2156",
   "instagram": "mrf.travels",
@@ -590,6 +605,12 @@ function home(){
     </div>
   </div></section></div>
 
+  <section class="meet"><div class="wrap">
+    <a class="meet-photo" href="#about" aria-label="Meet Mya">${slot("photos.about","Mya Ferrera, founder of MRF Travels")}</a>
+    <div class="meet-r"><div class="label">Your advisor</div>
+      <div class="meet-btns"><a class="btn" href="#about">Meet Mya</a><a class="btn solid" href="#inquire">${esc(s.heroButton)}</a></div></div>
+  </div></section>
+
   </main>`;
 }
 function journalSection(feature, grid){
@@ -601,7 +622,7 @@ function journalSection(feature, grid){
 }
 function aboutPage(){
   return `<main><section class="about" id="about"><div class="wrap">
-    ${slot("photos.about","Your portrait")}
+    ${slot("photos.about","Mya Ferrera, founder of MRF Travels")}
     <div>${T("div","site.aboutLabel","label")}${T("h2","site.aboutTitle","",{rich:1})}<hr class="rule">${T("div","site.aboutText","",{multi:1})}${T("div","site.signature","sig")}</div>
   </div></section></main>`;
 }
@@ -612,6 +633,7 @@ function inquirePage(){
     <form id="inquiry" novalidate>
       <label>Name<input id="q-name" autocomplete="name" placeholder="Full name"></label>
       <label>Email<input id="q-email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label>Phone <span class="opt">(optional)</span><input id="q-phone" type="tel" autocomplete="tel" placeholder="For a call or WhatsApp"></label>
       <label>Destination<input id="q-dest" placeholder="e.g. Amalfi Coast, or undecided"></label>
       <label>Travel dates<input id="q-dates" placeholder="e.g. June 2027, 10 nights"></label>
       <label>Travelers<select id="q-pax"><option>1</option><option selected>2</option><option>3–4</option><option>5+</option></select></label>
@@ -948,20 +970,47 @@ app.addEventListener("submit", e=>{
   const v = id => (document.getElementById(id).value || "").trim();
   const form = e.target, btn = form.querySelector('button[type="submit"]');
   const data = new URLSearchParams({
-    name, email, destination: v("q-dest"), dates: v("q-dates"), travelers: v("q-pax"),
-    occasion: v("q-occ"), notes: v("q-notes"), website: v("q-website")
+    name, email, phone: v("q-phone"), destination: v("q-dest"), dates: v("q-dates"), travelers: v("q-pax"),
+    occasion: v("q-occ"), notes: [v("q-notes"), v("q-phone") && "Phone: " + v("q-phone")].filter(Boolean).join("\n\n"), website: v("q-website")
   });
   btn.disabled = true; btn.textContent = "Sending…"; note.textContent = "";
   fetch(INQUIRY_URL, { method: "POST", mode: "no-cors", body: data })
     .then(()=>{
       form.reset();
       if(window.gtag) gtag("event", "generate_lead", {form_name: "inquiry", motive: data.get("occasion")});
-      note.textContent = "Thank you, " + name.split(" ")[0] + ". Your inquiry is on its way, and I'll reply within two business days.";
+      if(CALENDLY_URL){ showBooking(form, name, email); return; }
+      note.textContent = "Thank you, " + name.split(" ")[0] + ". Your inquiry is on its way, and I'll reply within 24 hours.";
     })
     .catch(()=>{
       note.textContent = "That didn't send. Please check your connection and try again, or email " + C.site.email + ".";
     })
     .finally(()=>{ btn.disabled = false; btn.textContent = "Send inquiry"; });
+});
+/* Last step of an inquiry: book the 30-minute consultation. Paste Mya's Calendly event link here to turn it on (empty = off). */
+const CALENDLY_URL = "";
+function showBooking(form, name, email){
+  const first = name.split(" ")[0];
+  const u = new URL(CALENDLY_URL);
+  u.searchParams.set("embed_domain", location.hostname || "mrftravels.com");
+  u.searchParams.set("embed_type", "Inline");
+  u.searchParams.set("hide_gdpr_banner", "1");
+  u.searchParams.set("background_color", "f5f0e6");
+  u.searchParams.set("text_color", "14251f");
+  u.searchParams.set("primary_color", "0c343a");
+  u.searchParams.set("name", name);
+  u.searchParams.set("email", email);
+  const box = document.createElement("div");
+  box.className = "booking full";
+  box.innerHTML = `<div class="label">Last step</div><h3>Thank you, ${esc(first)}. Choose a time for your consultation.</h3>
+    <iframe title="Book your consultation" src="${esc(u.toString())}" loading="lazy"></iframe>`;
+  form.replaceWith(box);
+  box.scrollIntoView({behavior:"smooth", block:"start"});
+}
+window.addEventListener("message", e=>{
+  if(e.origin !== "https://calendly.com" || !e.data || e.data.event !== "calendly.event_scheduled") return;
+  const box = document.querySelector(".booking");
+  if(window.gtag) gtag("event", "book_consultation");
+  if(box) box.innerHTML = `<div class="label">You're booked</div><h3>Your consultation is on the calendar.</h3><p>A confirmation is on its way to your email. I'm looking forward to it.</p>`;
 });
 const INQUIRY_URL = "https://script.google.com/macros/s/AKfycbxsQeijBiprofwK3WKr81bHOLVZLGaQ61XTNjJ0JZGsfFVs834wmrm2spDymdP83hAG1A/exec";
 
