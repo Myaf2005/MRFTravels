@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611171805";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611172125";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -18,7 +18,7 @@ async function gate() {
   const { data: role } = await sb.rpc("my_role");
   if (role !== "advisor") { await sb.auth.signOut(); return show("signin", "This sign-in is for the advisor only. Clients sign in at mrftravels.com/portal."); }
   const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aal?.currentLevel === "aal2") { await loadAll(); return show("studio"); }
+  if (aal?.currentLevel === "aal2") { await loadAll(); watchAccounts(); return show("studio"); }
   const { data: f } = await sb.auth.mfa.listFactors();
   const verified = (f?.totp || []).find((x) => x.status === "verified");
   if (verified) { S.mfa = { factorId: verified.id }; return show("verify"); }
@@ -513,7 +513,7 @@ document.addEventListener("submit", async (e) => {
     const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: S.mfa.factorId, code });
     S.busy = false;
     if (error) return show(S.screen, "That code didn't work. Codes change every 30 seconds, so try the newest one.");
-    await loadAll(); return show("studio");
+    await loadAll(); watchAccounts(); return show("studio");
   }
   const form = f.dataset.form; if (!form) return;
   const t = S.tripId;
@@ -619,6 +619,29 @@ function pickClient(onlyTrip) {
   document.addEventListener("keydown", onKey);
   document.body.appendChild(wrap);
   wrap.querySelector("a,[data-x]")?.focus();
+}
+
+// ---------------- keep the Studio fresh: notice new sign-ins without a manual refresh ----------------
+let watching = false, pendingRefresh = false;
+const busyEditing = () => !!document.querySelector(".overlay") || (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && document.activeElement.closest("form"));
+async function checkAccounts() {
+  if (S.screen !== "studio" || !S.D || document.visibilityState !== "visible") return;
+  const { data, error } = await sb.from("profiles").select("id,full_name,role,must_set_login,username");
+  if (error || !data) return;
+  const before = new Map(S.D.profiles.map((p) => [p.id, p]));
+  const joined = data.filter((p) => p.role === "client" && !p.must_set_login && before.get(p.id)?.must_set_login);
+  const changed = joined.length || data.length !== before.size || data.some((p) => { const b = before.get(p.id); return !b || b.must_set_login !== p.must_set_login || b.username !== p.username; });
+  joined.forEach((p) => toast(`${p.full_name} just set up their account.`));
+  if (changed || pendingRefresh) {
+    if (busyEditing()) { pendingRefresh = true; return; } // don't wipe a form you're typing in; refresh on the next check
+    pendingRefresh = false; await loadAll(); render();
+  }
+}
+function watchAccounts() {
+  if (watching) return; watching = true;
+  setInterval(checkAccounts, 30000);
+  document.addEventListener("visibilitychange", checkAccounts);
+  window.addEventListener("focus", checkAccounts);
 }
 
 // ---------------- chat file import (lets any Claude chat add a PDF it was given) ----------------

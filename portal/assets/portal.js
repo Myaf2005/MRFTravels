@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle } from "./lib.js?v=202611171805";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote } from "./lib.js?v=202611172125";
 
 const app = $("#app");
 const S = {
@@ -31,6 +31,7 @@ async function afterSignIn() {
   S.profile = profile;
   if (profile.must_set_login) return show("setup");
   await loadTrips();
+  if (S.trips.length > 1) S.section = "trips"; // several trips: let them choose first
   show("portal");
 }
 
@@ -54,7 +55,7 @@ async function startPreview(advisor, tripId, asId) {
   // what this client would see: the trips they belong to (or just this one if no login yet)
   S.profile = first ? { ...first } : { id: null, full_name: trip.travelers || "Your client" };
   S.trips = first ? all.filter((t) => (members || []).some((m) => m.user_id === first.id && m.trip_id === t.id)) : [trip];
-  S.tripId = tripId; S.section = "overview";
+  S.tripId = tripId; S.section = S.trips.length > 1 ? "trips" : "overview";
   await loadTrip();
   show("portal");
 }
@@ -155,13 +156,20 @@ function viewSetup() {
 }
 
 function secTrips() {
-  const row = (x) => `<button class="rowbtn" type="button" data-act="pickTrip" data-v="${x.id}">${ICON_DOC.replace("M14 3H6", "M14 3H6")}<span style="flex:1;min-width:0"><span class="nm" style="display:block">${esc(x.title)}</span>
-    <span class="muted" style="font-size:13px">${x.start_date ? esc(datesLine(x)) : "Dates coming soon"}${x.travelers ? " · " + esc(x.travelers) : ""}</span></span>
-    <span class="eyebrow" style="font-size:11px">${x.id === S.tripId ? "Viewing" : "Open"}</span></button>`;
+  const first = (S.profile.full_name || "").split(" ")[0];
   const up = S.trips.filter((x) => !isPast(x)), past = S.trips.filter(isPast).reverse();
-  return head("Your trips", "Every journey with Mya") +
-    `<section class="card"><h2 style="font-size:26px;margin-bottom:6px">Upcoming</h2>${up.length ? up.map(row).join("") : `<p class="empty">Nothing booked yet. Your next trip will appear here.</p>`}</section>
-    ${past.length ? `<section class="card"><h2 style="font-size:26px;margin-bottom:6px">Past trips</h2>${past.map(row).join("")}</section>` : ""}`;
+  const card = (x, i) => {
+    const dd = daysUntil(x.start_date), ph = PHOTOS[i % PHOTOS.length];
+    const when = isPast(x) ? "A trip to remember" : dd !== null && dd > 0 ? `${dd} day${dd === 1 ? "" : "s"} to go` : dd !== null && dd <= 0 ? "Happening now" : "Dates coming soon";
+    return `<button class="trip-card" type="button" data-act="pickTrip" data-v="${x.id}" style="${photoStyle(ph)}">
+      <span class="tc-in"><span class="eyebrow">${esc(x.start_date ? datesLine(x).toUpperCase() : "DATES COMING SOON")}</span>
+      <span class="tc-t">${esc(x.title)}</span>${x.travelers ? `<span class="tc-p">${esc(x.travelers)}</span>` : ""}
+      <span class="tc-w">${esc(when)} <span aria-hidden="true">→</span></span></span></button>`;
+  };
+  let i = 0;
+  return `<div class="chooser"><p class="eyebrow">Welcome${first ? ", " + esc(first) : ""}</p><h1>Which trip would you like to see?</h1>
+    ${up.length ? `<h2 class="ch-h">Upcoming</h2><div class="trip-grid">${up.map((x) => card(x, i++)).join("")}</div>` : ""}
+    ${past.length ? `<h2 class="ch-h">Past trips</h2><div class="trip-grid">${past.map((x) => card(x, i++)).join("")}</div>` : ""}</div>`;
 }
 function tripOptions() {
   const opt = (x) => `<option value="${x.id}" ${x.id === S.tripId ? "selected" : ""}>${esc(x.title)}</option>`;
@@ -183,7 +191,8 @@ function viewPortal() {
     return header + `<div class="centered" style="min-height:60vh"><div class="panel-card" style="text-align:center;align-items:center">
       <h2 style="font-size:34px">Your trip is being prepared</h2><p class="muted">Mya is building your itinerary. You'll see everything here as soon as it's ready.</p></div></div>`;
   }
-  const nav = (S.trips.length > 1 ? [...SECTIONS, ["trips", "Your trips"]] : SECTIONS).map(([k, l]) => `<button class="nav" type="button" data-act="go" data-v="${k}" ${S.section === k ? 'aria-current="page"' : ""}>${l}${k === "updates" && unread ? `<span class="count">${unread}</span>` : ""}</button>`).join("");
+  if (S.section === "trips" && S.trips.length > 1) return header + `<main id="main" tabindex="-1">${secTrips()}</main>`;
+  const nav = (S.trips.length > 1 ? [["trips", "← All my trips"], ...SECTIONS] : SECTIONS).map(([k, l]) => `<button class="nav" type="button" data-act="go" data-v="${k}" ${S.section === k ? 'aria-current="page"' : ""}>${l}${k === "updates" && unread ? `<span class="count">${unread}</span>` : ""}</button>`).join("");
   const body = { overview: secOverview, itinerary: secItinerary, bookings: secBookings, documents: secDocuments,
     costs: secCosts, essentials: secEssentials, updates: secUpdates, trips: secTrips }[S.section]();
   return header + `<div class="shell"><nav class="side noprint" aria-label="Trip sections">${nav}
@@ -249,6 +258,7 @@ function secItinerary() {
       <div><p class="eyebrow">${esc(label)}</p><h2 style="font-size:36px;margin-top:6px">${esc(day.title)}</h2>${day.place ? `<p class="muted" style="margin-top:6px">${esc(day.place)}</p>` : ""}</div>
       <div class="timeline">${day.items.length ? day.items.map((e) => `<div class="ev"><div class="tm">${esc(e.time_label)}</div><div class="ln"><i></i><s></s></div>
         <div class="tx"><b>${esc(e.title)}</b>${e.note ? `<span class="muted">${esc(e.note)}</span>` : ""}</div></div>`).join("") : `<p class="muted">A free day. Ask Mya for ideas anytime.</p>`}</div>
+      ${day.items.length ? `<p class="tz-note">${esc(tzNote(day.place, day.day_date))}</p>` : ""}
       <div class="noprint" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <button class="btn line sm" type="button" data-act="day" data-v="${S.day - 1}" ${S.day === 0 ? "disabled" : ""}>Previous day</button>
         <button class="btn line sm" type="button" data-act="day" data-v="${S.day + 1}" ${S.day === days.length - 1 ? "disabled" : ""}>Next day</button></div>
@@ -360,7 +370,8 @@ function itineraryDoc(coverPhoto) {
       ${d.days.map((day, i) => { const x = day.day_date ? toDate(day.day_date) : null; return `<div class="day">
         <div class="date"><small>Day ${i + 1}</small><b>${x ? x.getDate() : i + 1}</b><span>${x ? `${x.toLocaleDateString("en-US", { weekday: "short" })} · ${x.toLocaleDateString("en-US", { month: "short" })}` : ""}</span></div>
         <div><h3>${esc(day.title)}</h3>${day.place ? `<p class="place">${esc(day.place)}</p>` : `<div style="height:3mm"></div>`}
-          ${day.items.length ? day.items.map((e) => `<div class="ev"><span class="t">${esc(e.time_label)}</span><span><span class="w">${esc(e.title)}</span>${e.note ? `<span class="n">${esc(e.note)}</span>` : ""}</span></div>`).join("") : `<p class="dt">A free day to enjoy at your own pace.</p>`}</div></div>`; }).join("")}
+          ${day.items.length ? day.items.map((e) => `<div class="ev"><span class="t">${esc(e.time_label)}</span><span><span class="w">${esc(e.title)}</span>${e.note ? `<span class="n">${esc(e.note)}</span>` : ""}</span></div>`).join("") : `<p class="dt">A free day to enjoy at your own pace.</p>`}
+          ${day.items.length ? `<p class="tzn">${esc(tzNote(day.place, day.day_date))}</p>` : ""}</div></div>`; }).join("")}
     </section>` : "";
   const finale = `<section><div class="sec-h"><p class="eyebrow">Before you go</p><h2>Details &amp; contacts</h2></div>
       <div class="two"><div>${d.checklist.length ? d.checklist.map((c) => `<div class="chk"><i class="${c.done ? "on" : ""}"></i><span><span class="w" style="font-weight:400">${esc(c.title)}</span>${c.note ? `<span class="n">${esc(c.note)}</span>` : ""}</span></div>`).join("") : `<p class="dt">Your advisor will share your pre-departure checklist.</p>`}</div>

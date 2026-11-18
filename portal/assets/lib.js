@@ -156,3 +156,65 @@ export function nextCoverPhoto() {
   let i = 0; try { i = (Number(localStorage.getItem("mrf-cover")) || 0) % PHOTOS.length; localStorage.setItem("mrf-cover", String(i + 1)); } catch {}
   return PHOTOS[i];
 }
+
+// ---------- time zones, worked out from each itinerary day's place ----------
+// [words to look for in the place, IANA zone, how to name it]. Longer / more specific words first.
+const TZ_PLACES = [
+  [["miami", "fort lauderdale", "new york", "boston", "orlando", "atlanta", "washington"], "America/New_York", "Eastern US"],
+  [["los angeles", "lax", "long beach", "san francisco", "las vegas", "seattle"], "America/Los_Angeles", "Pacific US"],
+  [["chicago", "dallas", "houston", "new orleans"], "America/Chicago", "Central US"],
+  [["san juan", "puerto rico"], "America/Puerto_Rico", "Puerto Rico"],
+  [["st. maarten", "st maarten", "sint maarten", "philipsburg", "st. martin"], "America/Lower_Princes", "St. Maarten"],
+  [["st. kitts", "st kitts", "basseterre", "nevis"], "America/St_Kitts", "St. Kitts"],
+  [["barbados", "bridgetown"], "America/Barbados", "Barbados"],
+  [["st. lucia", "st lucia", "castries", "soufri"], "America/St_Lucia", "St. Lucia"],
+  [["st. thomas", "st thomas", "charlotte amalie", "st. john", "st john", "st. croix", "usvi"], "America/St_Thomas", "US Virgin Islands"],
+  [["tortola", "road town", "bvi", "virgin gorda", "jost van dyke"], "America/Tortola", "British Virgin Islands"],
+  [["antigua"], "America/Antigua", "Antigua"], [["aruba"], "America/Aruba", "Aruba"], [["curacao", "curaçao"], "America/Curacao", "Curaçao"],
+  [["bahamas", "nassau", "exuma"], "America/Nassau", "Bahamas"], [["jamaica", "montego", "negril"], "America/Jamaica", "Jamaica"],
+  [["turks", "caicos", "providenciales"], "America/Grand_Turk", "Turks & Caicos"], [["grand cayman", "cayman"], "America/Cayman", "Cayman Islands"],
+  [["punta cana", "dominican republic", "santo domingo"], "America/Santo_Domingo", "Dominican Republic"],
+  [["cancun", "cancún", "tulum", "playa del carmen", "riviera maya"], "America/Cancun", "Cancún"],
+  [["mexico city", "cabo", "los cabos", "oaxaca"], "America/Mexico_City", "Mexico"],
+  [["cartagena", "bogota", "bogotá", "medellin", "medellín", "colombia"], "America/Bogota", "Colombia"],
+  [["lima", "cusco", "machu picchu", "peru"], "America/Lima", "Peru"],
+  [["santiago", "chile", "atacama", "patagonia"], "America/Santiago", "Chile"],
+  [["buenos aires", "mendoza", "argentina"], "America/Argentina/Buenos_Aires", "Argentina"],
+  [["lisbon", "porto", "portugal", "algarve"], "Europe/Lisbon", "Portugal"],
+  [["london", "england", "scotland", "edinburgh"], "Europe/London", "UK"],
+  [["madrid", "barcelona", "seville", "ibiza", "mallorca", "spain"], "Europe/Madrid", "Spain"],
+  [["paris", "nice", "provence", "france", "monaco", "cannes"], "Europe/Paris", "France"],
+  [["zurich", "zürich", "geneva", "flims", "chur", "st. moritz", "st moritz", "zermatt", "lucerne", "switzerland", "interlaken"], "Europe/Zurich", "Switzerland"],
+  [["milan", "como", "faggeto", "tirano", "bellagio", "rome", "florence", "venice", "amalfi", "positano", "capri", "tuscany", "sicily", "italy", "dolomites", "lake garda"], "Europe/Rome", "Italy"],
+  [["belgrade", "serbia"], "Europe/Belgrade", "Serbia"],
+  [["amsterdam"], "Europe/Amsterdam", "Netherlands"], [["vienna", "austria"], "Europe/Vienna", "Austria"], [["prague"], "Europe/Prague", "Czechia"],
+  [["dubrovnik", "split", "hvar", "croatia"], "Europe/Zagreb", "Croatia"], [["athens", "santorini", "mykonos", "greece"], "Europe/Athens", "Greece"],
+  [["istanbul", "cappadocia", "turkey", "türkiye"], "Europe/Istanbul", "Türkiye"], [["marrakech", "morocco", "fes"], "Africa/Casablanca", "Morocco"],
+  [["doha", "qatar"], "Asia/Qatar", "Qatar"], [["dubai", "abu dhabi"], "Asia/Dubai", "UAE"],
+  [["mahé", "mahe", "praslin", "la digue", "seychelles"], "Indian/Mahe", "Seychelles"],
+  [["maldives", "malé"], "Indian/Maldives", "Maldives"], [["mauritius"], "Indian/Mauritius", "Mauritius"],
+  [["dar es salaam", "kilimanjaro", "tarangire", "serengeti", "ngorongoro", "karatu", "arusha", "zanzibar", "tanzania"], "Africa/Dar_es_Salaam", "Tanzania"],
+  [["nairobi", "masai mara", "kenya"], "Africa/Nairobi", "Kenya"], [["cape town", "johannesburg", "kruger", "south africa"], "Africa/Johannesburg", "South Africa"],
+  [["tokyo", "kyoto", "osaka", "japan"], "Asia/Tokyo", "Japan"], [["bali", "ubud"], "Asia/Makassar", "Bali"], [["bangkok", "phuket", "thailand"], "Asia/Bangkok", "Thailand"],
+  [["honolulu", "maui", "hawaii", "kauai"], "Pacific/Honolulu", "Hawaii"], [["bora bora", "tahiti", "moorea"], "Pacific/Tahiti", "Tahiti"],
+];
+const zoneFor = (segment) => {
+  const s = segment.toLowerCase();
+  for (const [words, zone, name] of TZ_PLACES) if (words.some((w) => new RegExp(`(^|[^a-zà-ÿ])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-zà-ÿ]|$)`).test(s))) return { zone, name };
+  return null;
+};
+const zoneTag = (zone, dateIso) => {
+  const at = dateIso ? new Date(`${dateIso}T12:00:00Z`) : new Date();
+  const part = (style) => new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: style }).formatToParts(at).find((p) => p.type === "timeZoneName")?.value || "";
+  const off = part("shortOffset").replace("GMT", "GMT").replace(/^GMT$/, "GMT+0"), abbr = part("short");
+  return /^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") ? `${abbr}, ${off}` : off;
+};
+// "All times are local · Italy (CEST, GMT+2) → Qatar (GMT+3)"
+export function tzNote(place, dateIso) {
+  const seen = new Set(), out = [];
+  for (const seg of (place || "").split(/\s*(?:→|->|>|\/)\s*/)) {
+    const z = zoneFor(seg); if (!z || seen.has(z.name)) continue;
+    seen.add(z.name); out.push(`${z.name} (${zoneTag(z.zone, dateIso)})`);
+  }
+  return out.length ? `All times are local · ${out.join(" → ")}` : "All times are local to where you are that day";
+}
