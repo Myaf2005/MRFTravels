@@ -24,7 +24,7 @@ export const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 // usernames sign in as <username>@clients.mrftravels.com; an email address signs in as itself
-export const loginEmail = (u) => (u.includes("@") ? u.trim() : `${u.trim().toLowerCase()}@${CLIENT_DOMAIN}`);
+export const loginEmail = (u) => (u.includes("@") ? u.trim() : `${u.trim().toLowerCase().replace(/\s+/g, ".")}@${CLIENT_DOMAIN}`);
 
 export async function callAccounts(payload) {
   const { data, error } = await sb.functions.invoke("portal-accounts", { body: payload });

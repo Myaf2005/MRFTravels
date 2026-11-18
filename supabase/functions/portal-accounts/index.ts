@@ -64,7 +64,7 @@ async function freeUsername(base: string): Promise<string> {
   throw new Error("Could not find a free username");
 }
 
-const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+const USERNAME_RE = /^(?=.*[a-z0-9])[a-z0-9._-]{3,30}$/;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -143,13 +143,13 @@ Deno.serve(async (req) => {
 
       case "set_login": {
         if (!myProfile?.must_set_login) return json({ error: "Your login is already set." }, 400);
-        const username = (body.username || "").trim().toLowerCase();
+        const username = (body.username || "").trim().toLowerCase().replace(/\s+/g, ".");
         const password = body.password || "";
         if (!USERNAME_RE.test(username)) {
-          return json({ error: "Usernames use 3–30 letters or numbers (dots, dashes and underscores are fine)." }, 400);
+          return json({ error: "Pick a username of at least 3 letters or numbers." }, 400);
         }
-        if (password.length < 10 || !/[0-9\W_]/.test(password)) {
-          return json({ error: "Your password needs at least 10 characters, including a number or symbol." }, 400);
+        if (password.length < 6) {
+          return json({ error: "Your password needs at least 6 characters." }, 400);
         }
         const { data: taken } = await admin.from("profiles").select("id").eq("username", username).neq("id", me.id).maybeSingle();
         if (taken) return json({ error: "That username is taken. Try another." }, 409);

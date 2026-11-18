@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote, costSummary, costOrder } from "./lib.js?v=202611172230";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote, costSummary, costOrder } from "./lib.js?v=202611181830";
 
 const app = $("#app");
 const S = {
@@ -145,9 +145,10 @@ function viewSetup() {
     <div><p class="eyebrow">Welcome, ${esc((S.profile?.full_name || "").split(" ")[0])}</p>
       <h2 style="font-size:38px;margin-top:8px">Make it yours</h2>
       <p class="muted" style="margin-top:8px">Your temporary login worked. Now choose a username and password only you know. The temporary one stops working once you save.</p></div>
-    <div class="field"><label for="nu">New username</label><input class="input" id="nu" name="nu" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+    <div class="field"><label for="nu">New username</label><input class="input" id="nu" name="nu" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <p class="muted small" style="margin-top:6px">At least 3 letters or numbers. Capitals and spaces are fine; you can type it however you like when signing in.</p></div>
     <div class="field"><label for="np">New password</label><input class="input" id="np" name="np" type="password" autocomplete="new-password" required>
-      <p class="muted small" style="margin-top:6px">At least 10 characters, including a number or symbol.</p></div>
+      <p class="muted small" style="margin-top:6px">At least 6 characters.</p></div>
     <div class="field"><label for="np2">Confirm password</label><input class="input" id="np2" name="np2" type="password" autocomplete="new-password" required></div>
     ${S.error ? `<p class="alert" role="alert">${esc(S.error)}</p>` : ""}
     <button class="btn" type="submit" ${S.busy ? "disabled" : ""}>${S.busy ? "Saving…" : "Save and enter my trip"}</button>
@@ -503,9 +504,9 @@ document.addEventListener("submit", async (e) => {
     S.error = ""; S.section = "overview"; await afterSignIn();
   }
   if (f.id === "f-setup") {
-    const nu = f.nu.value.trim().toLowerCase(), np = f.np.value, np2 = f.np2.value;
-    if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(nu)) return show("setup", "Usernames use 3–30 letters or numbers (dots, dashes and underscores are fine).");
-    if (np.length < 10 || !/[0-9\W_]/.test(np)) return show("setup", "Your password needs at least 10 characters, including a number or symbol.");
+    const nu = f.nu.value.trim().toLowerCase().replace(/\s+/g, "."), np = f.np.value, np2 = f.np2.value;
+    if (!/^[a-z0-9._-]{3,30}$/.test(nu) || !/[a-z0-9]/.test(nu)) return show("setup", "Pick a username of at least 3 letters or numbers.");
+    if (np.length < 6) return show("setup", "Your password needs at least 6 characters.");
     if (np !== np2) return show("setup", "The two passwords don't match.");
     S.busy = true; render();
     try {
