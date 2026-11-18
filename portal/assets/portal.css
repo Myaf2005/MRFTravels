@@ -278,3 +278,4 @@ body.studio .toast{background:#D3B47E;color:#14110B}
 .mgrid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .mtile{gap:6px;min-height:170px}
 .mtile .small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pill .count{display:inline-block;margin-left:6px;opacity:.75;font-weight:400}

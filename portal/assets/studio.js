@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611172140";
+  CATEGORIES, KIND_TAG, BUCKET, toDate } from "./lib.js?v=202611172150";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -430,9 +430,22 @@ const draftButtons = (c, copyAct) => `<a class="btn sm" href="${esc(mailtoUrl(c)
   <button class="btn line sm" type="button" data-act="${copyAct}">Copy message</button>`;
 
 function vTodo() {
-  const ks = [...S.D.tasks].sort((a, b) => a.done - b.done);
-  return h("My to-do", "Across every trip") + panel(ks.length ? ks.map(taskRow).join("") : `<p class="muted">Nothing on your list.</p>`,
-    `<form data-form="task"><h3 style="font-size:22px">Add a to-do</h3>${sel("trip_id", "Trip", [["", "General (no trip)"], ...activeTrips().map((t) => [t.id, `${tripLabel(t)} · ${t.title}`])])}
+  const f = S.todoFor || "all";
+  const open = (id) => S.D.tasks.filter((k) => !k.done && (k.trip_id || "") === id).length;
+  const groups = [...S.D.trips.filter((t) => S.D.tasks.some((k) => k.trip_id === t.id) || t.status !== "Complete")
+      .sort((a, b) => (a.start_date || "9").localeCompare(b.start_date || "9")).map((t) => ({ id: t.id, label: tripLabel(t), sub: t.title })),
+    ...(S.D.tasks.some((k) => !k.trip_id) ? [{ id: "", label: "General", sub: "Not tied to a trip" }] : [])];
+  const pill = (v, l, n) => `<button class="pill" type="button" data-act="todoFor" data-v="${esc(v)}" aria-pressed="${f === v}">${esc(l)}${n ? ` <span class="count">${n}</span>` : ""}</button>`;
+  const pills = `<div role="group" aria-label="Show to-dos for" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px">${pill("all", "All trips", S.D.tasks.filter((k) => !k.done).length)}${groups.map((g) => pill(g.id || "general", g.id ? `${g.label} · ${g.sub}` : "General", open(g.id))).join("")}</div>`;
+  const rows = (id) => [...S.D.tasks.filter((k) => (k.trip_id || "") === id)].sort((a, b) => a.done - b.done);
+  const section = (g, showHead) => { const ks = rows(g.id); if (!ks.length && showHead) return "";
+    return `${showHead ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin:18px 0 4px"><h3 style="font-size:22px">${esc(g.label)} <span class="muted" style="font-size:15px">· ${esc(g.sub)}</span></h3>
+      ${g.id ? `<button class="linkbtn" type="button" data-act="open" data-v="${g.id}" data-tab="tasks">Open trip →</button>` : ""}</div>` : ""}${ks.length ? ks.map(taskRow).join("") : `<p class="muted">Nothing on this list.</p>`}`; };
+  const chosen = groups.find((g) => (g.id || "general") === f);
+  const list = f === "all" ? (groups.map((g) => section(g, true)).join("") || `<p class="muted">Nothing on your list.</p>`) : chosen ? section(chosen, false) : `<p class="muted">Nothing on this list.</p>`;
+  const def = f === "all" ? "" : f === "general" ? "" : f;
+  return h("My to-do", chosen ? (chosen.id ? `${esc(chosen.label)} · ${esc(chosen.sub)}` : "General") : "Across every trip") + pills + panel(list,
+    `<form data-form="task"><h3 style="font-size:22px">Add a to-do</h3>${sel("trip_id", "Trip", [["", "General (no trip)"], ...activeTrips().map((t) => [t.id, `${tripLabel(t)} · ${t.title}`])], def)}
       ${fld("body", "To-do", "required")}<button class="btn sm" type="submit" style="margin-top:14px">Add to-do</button></form>`);
 }
 
@@ -458,6 +471,7 @@ document.addEventListener("click", async (e) => {
   const { act, v } = el.dataset;
   if (act === "signout") { await sb.auth.signOut(); S.D = null; return show("signin"); }
   if (act === "viewAs") return pickClient(v);
+  if (act === "todoFor") { S.todoFor = v; return render(); }
   if (act === "view") { S.view = v; S.error = ""; S.creds = null; render(); return scrollTo(0, 0); }
   if (act === "open") { S.view = "trip"; S.tripId = v; S.tab = el.dataset.tab || "itinerary"; S.creds = null; render(); return scrollTo(0, 0); }
   if (act === "tab") { S.tab = v; return render(); }
