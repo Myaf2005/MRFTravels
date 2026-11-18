@@ -220,6 +220,10 @@ section{padding-block:96px}
 .booking h3{font-family:var(--display);font-weight:400;font-size:28px;margin:12px 0 20px}
 .booking iframe{display:block;width:100%;height:700px;border:0;background:var(--surface)}
 @media (max-width:700px){.booking iframe{height:900px}}
+.alt-time{margin-top:28px;border-top:1px solid var(--line);padding-top:24px}
+.alt-time>p{margin:0 0 14px;color:var(--muted)}
+.alt-form{display:grid;gap:18px}
+.alt-row{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
 
 /* meet mya (home) */
 .meet .wrap{display:flex;align-items:center;justify-content:center;gap:56px}
@@ -338,14 +342,14 @@ body.editing{padding-bottom:84px}
   "signature": "MRF",
   "inquireLabel": "Inquire",
   "inquireTitle": "Let's plan *your next journey.*",
-  "inquireText": "Tell me a little about the trip you have in mind. I'll reply within 24 hours to schedule your consultation.",
+  "inquireText": "Tell me a little about the trip you have in mind, then choose a time for your consultation. I reply to every inquiry within 24 hours.",
   "email": "hello@mrftravels.com",
   "phone": "(786) 287-2156",
   "instagram": "mrf.travels",
   "contactLabel": "Contact us",
   "contactTitle": "Prefer to *reach out directly?*",
   "contactText": "Call, text, email or message me on Instagram. Every message comes straight to me.",
-  "hours": "By appointment · Monday to Saturday",
+  "hours": "By appointment · 7 days a week",
   "footer": "Bespoke itineraries & luxury travel booking · © 2026"
  },
  "services": [
@@ -978,7 +982,7 @@ app.addEventListener("submit", e=>{
     .then(()=>{
       form.reset();
       if(window.gtag) gtag("event", "generate_lead", {form_name: "inquiry", motive: data.get("occasion")});
-      if(CALENDLY_URL){ showBooking(form, name, email); return; }
+      if(CALENDLY_URL){ showBooking(form, name, email, data); return; }
       note.textContent = "Thank you, " + name.split(" ")[0] + ". Your inquiry is on its way, and I'll reply within 24 hours.";
     })
     .catch(()=>{
@@ -987,8 +991,8 @@ app.addEventListener("submit", e=>{
     .finally(()=>{ btn.disabled = false; btn.textContent = "Send inquiry"; });
 });
 /* Last step of an inquiry: book the 30-minute consultation. Paste Mya's Calendly event link here to turn it on (empty = off). */
-const CALENDLY_URL = "";
-function showBooking(form, name, email){
+const CALENDLY_URL = "https://calendly.com/mya-ferrera-mrftravels/30min";
+function showBooking(form, name, email, sent){
   const first = name.split(" ")[0];
   const u = new URL(CALENDLY_URL);
   u.searchParams.set("embed_domain", location.hostname || "mrftravels.com");
@@ -1002,10 +1006,34 @@ function showBooking(form, name, email){
   const box = document.createElement("div");
   box.className = "booking full";
   box.innerHTML = `<div class="label">Last step</div><h3>Thank you, ${esc(first)}. Choose a time for your consultation.</h3>
-    <iframe title="Book your consultation" src="${esc(u.toString())}" loading="lazy"></iframe>`;
+    <iframe title="Book your consultation" src="${esc(u.toString())}" loading="lazy"></iframe>
+    <div class="alt-time"><p>None of these times work for you?</p><button class="btn" type="button" data-alt-open>Request a different time</button>
+      <form class="alt-form" hidden novalidate>
+        <label>Your preferred days and times<input name="when" placeholder="e.g. Tuesday or Wednesday, after 9pm"></label>
+        <label>Your time zone<input name="tz" value="${esc(tzName())}"></label>
+        <div class="alt-row"><button class="btn solid" type="submit">Send request</button><p class="form-note" aria-live="polite"></p></div>
+      </form></div>`;
   form.replaceWith(box);
+  const alt = box.querySelector(".alt-form");
+  box.querySelector("[data-alt-open]").addEventListener("click", e=>{ alt.hidden = false; e.target.hidden = true; alt.querySelector("input").focus(); });
+  alt.addEventListener("submit", e=>{
+    e.preventDefault();
+    const when = alt.when.value.trim(), tz = alt.tz.value.trim(), note = alt.querySelector(".form-note"), btn = alt.querySelector("button");
+    if(!when){ note.textContent = "Please tell me which days and times suit you."; return; }
+    const req = new URLSearchParams(sent);
+    req.set("occasion", "Time request");
+    req.set("notes", "REQUESTED CONSULTATION TIME: " + when + (tz ? " (" + tz + ")" : "") + "\n\n" + (sent.get("notes") || ""));
+    btn.disabled = true; btn.textContent = "Sending…"; note.textContent = "";
+    fetch(INQUIRY_URL, { method: "POST", mode: "no-cors", body: req })
+      .then(()=>{
+        if(window.gtag) gtag("event", "request_time");
+        box.innerHTML = `<div class="label">Request received</div><h3>Thank you, ${esc(first)}.</h3><p>I'll confirm a time that works for you within 24 hours.</p>`;
+      })
+      .catch(()=>{ note.textContent = "That didn't send. Please try again, or email " + C.site.email + "."; btn.disabled = false; btn.textContent = "Send request"; });
+  });
   box.scrollIntoView({behavior:"smooth", block:"start"});
 }
+function tzName(){ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g," "); }catch(e){ return ""; } }
 window.addEventListener("message", e=>{
   if(e.origin !== "https://calendly.com" || !e.data || e.data.event !== "calendly.event_scheduled") return;
   const box = document.querySelector(".booking");
