@@ -389,7 +389,7 @@ async function makePdf() {
   const designed = S.d.docs.find((x) => x.is_itinerary);
   if (designed) {
     const ext = (designed.storage_path.match(/\.[a-z0-9]+$/i) || [".pdf"])[0];
-    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(designed.storage_path, 600, { download: `${designed.title.replace(/[\\/:*?"<>|]+/g, "").trim() || "MRF Travels Itinerary"}${designed.title.toLowerCase().endsWith(ext.toLowerCase()) ? "" : ext}` });
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(designed.storage_path, 600, { download: `${designed.title.replace(/\s*\(pdf\)\s*$/i, "").replace(/[\\/:*?"<>|]+/g, "").trim() || "MRF Travels Itinerary"}${designed.title.toLowerCase().endsWith(ext.toLowerCase()) ? "" : ext}` });
     if (!error && data?.signedUrl) {
       const a = document.createElement("a"); a.href = data.signedUrl; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
       return toast("Downloading your itinerary.");
