@@ -1,6 +1,6 @@
 // MRF Travels — client portal
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, initials, toast, openDocument, uploadFile, callAccounts,
-  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote, costSummary, costOrder } from "./lib.js?v=202611181840";
+  loginEmail, setRemember, getRemember, CATEGORIES, KIND_TAG, ADVISOR, BUCKET, toDate, slidesHtml, nextCoverPhoto, photoStyle, PHOTOS, tzNote, costSummary, costOrder, cleanLogin } from "./lib.js?v=202611221900";
 
 const app = $("#app");
 const S = {
@@ -494,7 +494,7 @@ document.addEventListener("change", async (e) => {
 document.addEventListener("submit", async (e) => {
   const f = e.target; e.preventDefault();
   if (f.id === "f-signin") {
-    const u = f.u.value.trim(), p = f.p.value; S.lastUser = u;
+    const u = cleanLogin(f.u.value), p = cleanLogin(f.p.value); S.lastUser = u;
     if (!u || !p) return show("signin", "Enter your username and password.");
     setRemember(f.remember.checked);
     S.busy = true; render();
@@ -504,7 +504,7 @@ document.addEventListener("submit", async (e) => {
     S.error = ""; S.section = "overview"; await afterSignIn();
   }
   if (f.id === "f-setup") {
-    const nu = f.nu.value.trim().toLowerCase().replace(/\s+/g, "."), np = f.np.value, np2 = f.np2.value;
+    const nu = cleanLogin(f.nu.value).toLowerCase().replace(/\s+/g, "."), np = cleanLogin(f.np.value), np2 = cleanLogin(f.np2.value);
     if (!/^[a-z0-9._-]{3,30}$/.test(nu) || !/[a-z0-9]/.test(nu)) return show("setup", "Pick a username of at least 3 letters or numbers.");
     if (np.length < 6) return show("setup", "Your password needs at least 6 characters.");
     if (np !== np2) return show("setup", "The two passwords don't match.");

@@ -46,8 +46,8 @@ function claims(token: string): Record<string, unknown> {
 }
 
 function tempPassword(): string {
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  const bytes = crypto.getRandomValues(new Uint8Array(14));
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789"; // short, lowercase, no look-alikes (0/o, 1/l/i)
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
   return Array.from(bytes, (b) => chars[b % chars.length]).join("");
 }
 
@@ -57,7 +57,7 @@ function slug(s: string): string {
 
 async function freeUsername(base: string): Promise<string> {
   for (let i = 0; i < 20; i++) {
-    const candidate = `${base}.${Math.floor(1000 + Math.random() * 9000)}`;
+    const candidate = `${base.slice(0, 10) || "guest"}${i < 10 ? Math.floor(10 + Math.random() * 90) : Math.floor(100 + Math.random() * 900)}`;
     const { data } = await admin.from("profiles").select("id").eq("username", candidate).maybeSingle();
     if (!data) return candidate;
   }
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         const last = (body.last_name || "").trim();
         const tripId = body.trip_id;
         if (!first || !last || !tripId) return json({ error: "Name and trip are required." }, 400);
-        const username = await freeUsername(`${slug(first)}.${slug(last)}` || "client");
+        const username = await freeUsername(slug(first) || slug(last));
         const password = tempPassword();
         const { data: created, error } = await admin.auth.admin.createUser({
           email: `${username}@${CLIENT_DOMAIN}`,
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         const { data: p } = await admin.from("profiles").select("full_name, role").eq("id", uid).single();
         if (!p || p.role !== "client") return json({ error: "Client not found." }, 404);
         const [first = "client", ...rest] = (p.full_name || "client").split(" ");
-        const username = await freeUsername(`${slug(first)}.${slug(rest.join("")) || "client"}`);
+        const username = await freeUsername(slug(first) || slug(rest.join("")));
         const password = tempPassword();
         const { error } = await admin.auth.admin.updateUserById(uid, {
           email: `${username}@${CLIENT_DOMAIN}`, password, email_confirm: true,

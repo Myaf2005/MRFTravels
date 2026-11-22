@@ -1,6 +1,6 @@
 // MRF Travels — Advisor Studio (Mya only; requires password + authenticator code)
 import { sb, $, esc, askConfirm, fmt, fmtLong, daysUntil, money, toast, openDocument, uploadFile, callAccounts,
-  CATEGORIES, KIND_TAG, BUCKET, toDate, costSummary, costOrder } from "./lib.js?v=202611181840";
+  CATEGORIES, KIND_TAG, BUCKET, toDate, costSummary, costOrder } from "./lib.js?v=202611221900";
 
 const app = $("#app");
 const S = { screen: "loading", error: "", busy: false, view: "dashboard", tripId: null, tab: "itinerary", D: null, mfa: null, creds: null, invited: null };
@@ -222,7 +222,7 @@ function vTrip() {
   const d = daysUntil(t.start_date);
   const tabs = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab" role="tab" type="button" data-act="tab" data-v="${k}" aria-selected="${S.tab === k}">${l}</button>`).join("")}</div>`;
   const creds = S.creds ? `<div class="card" style="border-color:var(--gold);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
-      <div>${S.creds.returning ? `<span class="lbl">${esc(S.creds.name)} uses their existing login</span><p style="font-size:16px">Let them know their new trip is in the portal.</p>` : `<span class="lbl">New temporary login for ${esc(S.creds.name)}</span><p style="font-size:16px">Username <b style="font-weight:500;color:var(--gold)">${esc(S.creds.username)}</b> · Password <b style="font-weight:500;color:var(--gold)">${esc(S.creds.password)}</b></p>`}</div>
+      <div>${S.creds.returning ? `<span class="lbl">${esc(S.creds.name)} uses their existing login</span><p style="font-size:16px">Let them know their new trip is in the portal.</p>` : `<span class="lbl">New temporary login for ${esc(S.creds.name)}</span><p style="font-size:16px">Username <b style="font-weight:500;color:var(--gold)">${esc(S.creds.username)}</b><button class="linkbtn" type="button" data-act="copyText" data-v="${esc(S.creds.username)}" style="margin-left:8px;font-size:12px">Copy</button> · Password <b style="font-weight:500;color:var(--gold)">${esc(S.creds.password)}</b><button class="linkbtn" type="button" data-act="copyText" data-v="${esc(S.creds.password)}" style="margin-left:8px;font-size:12px">Copy</button></p>`}</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(S.creds, "copyCreds")}<button class="btn line sm" type="button" data-act="hideCreds">Done</button></div>
       ${S.creds.email ? "" : `<p class="muted small" style="flex-basis:100%">No email on file for ${esc(S.creds.name)}, so the draft opens without a recipient. Add it in the To line.</p>`}</div>` : "";
   const body = { itinerary: tItinerary, bookings: tBookings, documents: tDocuments, costs: tCosts, updates: tUpdates, checklist: tChecklist, tasks: tTasks, people: tPeople, details: tDetails }[S.tab](t);
@@ -397,8 +397,8 @@ function vInvite() {
       ${inv && inv.returning ? `<p>${esc(inv.name)} already has a login, so nothing new to send them, just a heads-up that their new trip is ready.</p>
         <p style="padding:14px;background:var(--bg);font-size:14px;white-space:pre-line">${esc(inviteMessage(inv))}</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(inv, "copyInvite")}<button class="btn line sm" type="button" data-act="open" data-v="${inv.tripId}">Open their trip</button></div>`
-      : inv ? `<div><span class="lbl">Temporary username</span><p style="font-size:18px;color:var(--gold)">${esc(inv.username)}</p></div>
-        <div><span class="lbl">Temporary password</span><p style="font-size:18px;color:var(--gold);letter-spacing:.06em">${esc(inv.password)}</p></div>
+      : inv ? `<div><span class="lbl">Temporary username</span><p style="font-size:18px;color:var(--gold)">${esc(inv.username)}<button class="linkbtn" type="button" data-act="copyText" data-v="${esc(inv.username)}" style="margin-left:8px;font-size:12px">Copy</button></p></div>
+        <div><span class="lbl">Temporary password</span><p style="font-size:18px;color:var(--gold);letter-spacing:.06em">${esc(inv.password)}<button class="linkbtn" type="button" data-act="copyText" data-v="${esc(inv.password)}" style="margin-left:8px;font-size:12px">Copy</button></p></div>
         <p style="padding:14px;background:var(--bg);font-size:14px;white-space:pre-line">${esc(inviteMessage(inv))}</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">${draftButtons(inv, "copyInvite")}<button class="btn line sm" type="button" data-act="open" data-v="${inv.tripId}">Open their trip</button></div>
         <p class="muted small">"Open in my email app" opens a ready-to-send email in your computer\'s Mail app. Close it and choose Save to keep it in Drafts. This password is shown only now; if it's lost, use Reset login on their trip.</p>`
@@ -492,6 +492,7 @@ document.addEventListener("click", async (e) => {
   if (act === "togglePay") { const p = S.D.payments.find((x) => x.id === v); return run(sb.from("payments").update({ received: !p.received }).eq("id", v)); }
   if (act === "starterChecklist") return run(addStarterChecklist(S.tripId), "Standard checklist added.");
   if (act === "hideCreds") { S.creds = null; return render(); }
+  if (act === "copyText") return copy(v, "Copied.");
   if (act === "copyCreds") return copy(inviteMessage(S.creds), "Message copied.");
   if (act === "copyInvite") return copy(inviteMessage(S.invited), "Welcome message copied.");
   if (act === "resetLogin") {

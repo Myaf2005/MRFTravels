@@ -246,3 +246,23 @@ if (!window.__mrfPwEye) {
     input.focus({ preventScroll: true });
   });
 }
+
+// clean what people paste into login boxes: hidden spaces, line breaks, quotes, a leading "Username:" / "Password:" label
+// on submit: only invisible characters and outer spaces go
+export const cleanLogin = (v) => String(v || "").replace(/[\u200B-\u200D\u2060\uFEFF]/g, "").replace(/\u00A0/g, " ").trim();
+// on paste: also a leading "Username:" / "Temporary password:" label and wrapping quotes
+const cleanPasted = (v) => cleanLogin(cleanLogin(v).replace(/^(temporary\s+)?(username|password)\s*[:\-–]\s*/i, "").replace(/^["“”‘’`]+|["“”‘’`]+$/g, ""));
+if (!window.__mrfPasteClean) {
+  window.__mrfPasteClean = true;
+  document.addEventListener("paste", (e) => {
+    const el = e.target;
+    if (!(el instanceof HTMLInputElement) || !/^(u|p|nu|np|np2)$/.test(el.id)) return;
+    const text = e.clipboardData?.getData("text"); if (text == null) return;
+    const clean = cleanPasted(text.split(/\r?\n/).find((l) => l.trim()) || "");
+    e.preventDefault();
+    const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? el.value.length;
+    el.value = el.value.slice(0, a) + clean + el.value.slice(b);
+    try { el.setSelectionRange(a + clean.length, a + clean.length); } catch {}
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
